@@ -261,7 +261,7 @@ var appRouter = function (app) {
                     '',
                     oData.text,
                     '',
-                    'Source: ' + oData.source,
+                    (oData.source && oData.source.indexOf("Source") === -1 ? 'Source: ' : "") + oData.source,
                     '',
                     oData.appointments.length ? '### News ' : "",
                     '',
