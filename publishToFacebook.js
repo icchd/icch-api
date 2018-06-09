@@ -6,7 +6,6 @@ var operation = null;
 
 function abort (fnStatusUpdate) {
     if (operation) {
-        operation.reset();
         operation.stop();
         fnStatusUpdate("aborted");
     }
