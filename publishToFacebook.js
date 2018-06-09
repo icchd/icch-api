@@ -23,7 +23,7 @@ function checkPageExists(sUrl, cb, fnStatusUpdate) {
         fnStatusUpdate("waiting " + currentAttempt + "/20");
 
         request(sUrl, function (error, response, body) {
-            if (operation.retry(error || !response || response.statusCode !== 200)) {
+            if (!operation || operation.retry(error || !response || response.statusCode !== 200)) {
               return;
             }
             cb();
