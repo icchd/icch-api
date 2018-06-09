@@ -3,6 +3,8 @@ var fs = require('fs');
 var https = require("https");
 var child_process = require("child_process");
 
+// -- facebook publishing
+
 const StringDecoder = require('string_decoder').StringDecoder;
 const decoder = new StringDecoder('utf8');
 const MIN_FACEBOOK_REPUBLISH_SECS = 900000;
@@ -20,7 +22,8 @@ function getEnv() {
         "ALLOWED_HOST",
         "DRY_RUN",
         "GITHUB_COMMITTER_NAME",
-        "GITHUB_COMMITTER_EMAIL"
+        "GITHUB_COMMITTER_EMAIL",
+        "BULLETIN_FORK_FACEBOOK_PUBLISH"
     ].forEach(function (sVar) {
         if (process.env[sVar]) {
             oEnv[sVar] = process.env[sVar];
@@ -144,6 +147,9 @@ function newGithubFile(sContent, sGithubPath, sSha) {
 
 var appRouter = function (app) {
     var oEnv = getEnv();
+    var oStatus = {
+        bulletin: {}
+    };
 
     app.use( bodyParser.json() );
     app.use( bodyParser.urlencoded({
@@ -167,6 +173,10 @@ var appRouter = function (app) {
             message: "PONG"
         });
     });
+    app.get("/status", function (request, response) {
+        response.send(oStatus);
+    });
+
     app.post("/songs", function (request, response) {
         var oData = request.body;
 
@@ -281,44 +291,58 @@ var appRouter = function (app) {
         });
 
         oCanPublishToFacebookPromise.then(function () {
-            if (oData.publish.facebook) {
-                var sSeconds = new Date().getTime() - lastFacebookPublishDate;
-                if (sSeconds <= MIN_FACEBOOK_REPUBLISH_SECS) {
-                    console.log("Cannot publish to facebook yet. Must wait until "
-                        + sSeconds + "/" + MIN_FACEBOOK_REPUBLISH_SECS + " seconds before retrying.");
+            publishToFacebook(oData);
+        }).then(function (oResult) {
+            var oResponse = {};
+            oResponse.success = oResult.status === "error" ? false : true;
+            oResponse.message = oResult.message;
+            oResponse.path = "/" + oData.saveAs;
+        });
+    });
 
-                    response.send({
-                        success: false,
-                        message: "Please wait 15 minutes before re-publishing"
-                    });
-                    return;
-                }
+    function publishToFacebook(oData) {
+        if (oData.publish.facebook) {
+            var sSeconds = new Date().getTime() - lastFacebookPublishDate;
+            if (sSeconds <= MIN_FACEBOOK_REPUBLISH_SECS) {
+                console.log("Cannot publish to facebook yet. Must wait until "
+                    + sSeconds + "/" + MIN_FACEBOOK_REPUBLISH_SECS + " seconds before retrying.");
 
-                lastFacebookPublishDate = new Date().getTime();
+                return {
+                    status: "error",
+                    message: "Please wait 15 minutes before re-publishing"
+                };
+            }
 
-                console.log("Publishing to Facebook");
-                // Now publish to facebook when the site is available
+            lastFacebookPublishDate = new Date().getTime();
 
+            oStatus.bulletin.facebook = "beginning";
+
+            var oPublishOpts = {
+                publishForReal: oEnv.FACEBOOK_IS_REAL_PUBLISH === "true" ? true : false,
+                accessToken: oEnv.FACEBOOK_PERMANENT_ACCESS_TOKEN,
+                message: oData.publish.facebookMessage || "Our bulletin for " + oData.title + " is available",
+                link: oData.publish.htmlLink
+            };
+
+            if (oEnv.BULLETIN_FORK_FACEBOOK_PUBLISH === "true") {
                 var child = child_process.fork("./publishToFacebook");
-                child.send({
-                    publishForReal: oEnv.FACEBOOK_IS_REAL_PUBLISH === "true" ? true : false,
-                    accessToken: oEnv.FACEBOOK_PERMANENT_ACCESS_TOKEN,
-                    message: oData.publish.facebookMessage || "Our bulletin for " + oData.title + " is available",
-                    link: oData.publish.htmlLink
-                });
+                child.send(oPublishOpts);
                 child.on("error", function (err) {
                     console.log("Error from child process: " + err);
                 });
+                oStatus.bulletin.facebook = "success";
+            } else {
+                var oPublishToFacebook = require("../publishToFacebook");
+                oPublishToFacebook.beginPublish(oPublishOpts, function (progress) {
+                    oStatus.bulletin.facebook = progress;
+                });
+                return {
+                    status: "progress", // caller must check the status
+                    message: "Bulletin is being published on facebook"
+                };
             }
-
-            response.send({
-                success: true,
-                message: "Bullettin was published successfully",
-                path: "/" + oData.saveAs
-            });
-        });
-
-    });
+        }
+    }
 };
 
 module.exports = appRouter;

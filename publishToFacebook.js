@@ -2,7 +2,7 @@ var FB = require("fb");
 var request = require("request");
 var retry = require("retry");
 
-function checkPageExists(sUrl, cb) {
+function checkPageExists(sUrl, cb, fnStatusUpdate) {
     var operation = retry.operation({
         retries: 20,
         factor: 8
@@ -10,6 +10,7 @@ function checkPageExists(sUrl, cb) {
 
     operation.attempt( function(currentAttempt) {
         console.log("Facebook publishing attempt " + currentAttempt);
+        fnStatusUpdate("waiting " + currentAttempt + "/20");
 
         request(sUrl, function (error, response, body) {
             if (operation.retry(error || !response || response.statusCode !== 200)) {
@@ -19,7 +20,6 @@ function checkPageExists(sUrl, cb) {
         });
     });
 }
-
 function publishToFacebook(sPermanentAccessToken, sMessage, sLink, isRealPublish) {
     return new Promise(function (fnResolve, fnReject) {
 
@@ -49,26 +49,48 @@ function publishToFacebook(sPermanentAccessToken, sMessage, sLink, isRealPublish
     });
 }
 
-process.on("message", function (oData) {
-    console.log("received message" : JSON.stringify(oData, null, 3));
-    checkPageExists(oData.link, function(err, sStatusCode) {
-        if (err) {
-            console.log("Error while publishing to facebook occurred");
-            console.log(err);
-            process.disconnect();
-            return;
-        }
-        publishToFacebook(
-          oData.accessToken,
-          oData.message,
-          oData.link,
-          oData.publishForReal
-        ).then(function (sUrl) {
-          console.log("Facebook publishing success", sUrl);
-        }, function () {
-          console.log("Facebook publishing failed");
-        }).then(function () {
-            process.disconnect();
-        });
+function beginPublish(oData, fnStatusCb) {
+    var fnProgressUpdate = fnStatusCb || function () { };
+
+    return new Promise(function (fnSuccess, fnError) {
+        checkPageExists(oData.link, function(err, sStatusCode) {
+            if (err) {
+                fnProgressUpdate("error");
+                fnError(err);
+                return;
+            }
+            fnProgressUpdate("publishing");
+            publishToFacebook(
+              oData.accessToken,
+              oData.message,
+              oData.link,
+              oData.publishForReal
+            ).then(function (sUrl) {
+              fnProgressUpdate("success");
+              fnSuccess(sUrl);
+            }, function (e) {
+              fnProgressUpdate("error");
+              fnError(e);
+            })
+        }, fnProgressUpdate);
     });
-});
+}
+
+if (process) {
+    process.on("message", function (oData) {
+        beginPublish(oData)
+            .then(function (sUrl) {
+                console.log("Facebook publishing success", sUrl);
+                process.disconnect();
+            }, function (err) {
+                console.log("Error while publishing to facebook occurred");
+                console.log(err);
+                process.disconnect();
+            });
+    });
+}
+
+module.exports = {
+    beginPublish
+}
+
