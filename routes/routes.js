@@ -180,6 +180,12 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
+    app.get("/abortFacebookPublish", function (request, response) {
+        oPublishToFacebook.abort(function (sStatus) {
+            oStatus.bulletin.facebook = sStatus;
+        });
+        response.send(oStatus);
+    });
     app.post("/songs", function (request, response) {
         var oData = request.body;
 
@@ -305,7 +311,9 @@ var appRouter = function (app) {
 
     function publishToFacebook(oData) {
         // cancel previous operation if any is ongoing
-        oPublishToFacebook.abort();
+        oPublishToFacebook.abort(oPublishOpts, function (progress) {
+            oStatus.bulletin.facebook = progress;
+        });
 
         if (oData.publish.facebook) {
             var sSeconds = new Date().getTime() - lastFacebookPublishDate;
