@@ -8,7 +8,6 @@ function abort (fnStatusUpdate) {
     if (operation) {
         operation.reset();
         operation.stop();
-        operation = null;
         fnStatusUpdate("aborted");
     }
 }
