@@ -2,6 +2,7 @@ var bodyParser = require("body-parser");
 var fs = require('fs');
 var https = require("https");
 var child_process = require("child_process");
+var oPublishToFacebook = require("../publishToFacebook");
 
 // -- facebook publishing
 
@@ -291,7 +292,7 @@ var appRouter = function (app) {
         });
 
         oCanPublishToFacebookPromise.then(function () {
-            publishToFacebook(oData);
+            return publishToFacebook(oData);
         }).then(function (oResult) {
             var oResponse = {};
             oResponse.success = oResult.status === "error" ? false : true;
@@ -301,6 +302,9 @@ var appRouter = function (app) {
     });
 
     function publishToFacebook(oData) {
+        // cancel previous operation if any is ongoing
+        oPublishToFacebook.abort();
+
         if (oData.publish.facebook) {
             var sSeconds = new Date().getTime() - lastFacebookPublishDate;
             if (sSeconds <= MIN_FACEBOOK_REPUBLISH_SECS) {
@@ -331,8 +335,11 @@ var appRouter = function (app) {
                     console.log("Error from child process: " + err);
                 });
                 oStatus.bulletin.facebook = "success";
+                return {
+                    status: "success", // caller must check the status
+                    message: "Process is taking care of publishing"
+                };
             } else {
-                var oPublishToFacebook = require("../publishToFacebook");
                 oPublishToFacebook.beginPublish(oPublishOpts, function (progress) {
                     oStatus.bulletin.facebook = progress;
                 });

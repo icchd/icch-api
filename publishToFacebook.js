@@ -2,8 +2,18 @@ var FB = require("fb");
 var request = require("request");
 var retry = require("retry");
 
+var operation = null;
+
+function abort (fnStatusUpdate) {
+    if (operation) {
+        operation.stop();
+        operation = null;
+        fnStatusUpdate("aborted");
+    }
+}
+
 function checkPageExists(sUrl, cb, fnStatusUpdate) {
-    var operation = retry.operation({
+    operation = retry.operation({
         retries: 20,
         factor: 8
     });
@@ -91,6 +101,7 @@ if (process) {
 }
 
 module.exports = {
-    beginPublish
+    beginPublish,
+    abort
 }
 
