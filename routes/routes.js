@@ -311,7 +311,7 @@ var appRouter = function (app) {
 
     function publishToFacebook(oData) {
         // cancel previous operation if any is ongoing
-        oPublishToFacebook.abort(oPublishOpts, function (progress) {
+        oPublishToFacebook.abort(function (progress) {
             oStatus.bulletin.facebook = progress;
         });
 
