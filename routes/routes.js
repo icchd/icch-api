@@ -8,7 +8,7 @@ var oPublishToFacebook = require("../publishToFacebook");
 
 const StringDecoder = require('string_decoder').StringDecoder;
 const decoder = new StringDecoder('utf8');
-const MIN_FACEBOOK_REPUBLISH_SECS = 900000;
+const DEFAULT_MIN_FACEBOOK_REPUBLISH_SECS = 900000;
 
 var lastFacebookPublishDate = 0;
 
@@ -18,6 +18,7 @@ function getEnv() {
         "FACEBOOK_PERMANENT_ACCESS_TOKEN",
         "FACEBOOK_IS_REAL_PUBLISH",
         "PASSWORD_BULLETIN_PUBLISH",
+        "MIN_FACEBOOK_REPUBLISH_SECS",
         "PASSWORD_SONG_PUBLISH",
         "GITHUB_API_BASIC_AUTH",
         "ALLOWED_HOST",
@@ -315,13 +316,15 @@ var appRouter = function (app) {
             oStatus.bulletin.facebook = progress;
         });
 
+        const sMinRepublishSecs = oEnv.MIN_FACEBOOK_REPUBLISH_SECS || DEFAULT_MIN_FACEBOOK_REPUBLISH_SECS;
+
         if (oData.publish.facebook) {
             var sSeconds = new Date().getTime() - lastFacebookPublishDate;
-            if (sSeconds <= MIN_FACEBOOK_REPUBLISH_SECS) {
+            if (sSeconds <= sMinRepublishSecs) {
                 console.log("Cannot publish to facebook yet. Must wait until "
-                    + sSeconds + "/" + MIN_FACEBOOK_REPUBLISH_SECS + " seconds before retrying.");
+                    + sSeconds + "/" + sMinRepublishSecs + " seconds before retrying.");
 
-                oStatus.bulletin.facebook = "retry in " + (parseInt(MIN_FACEBOOK_REPUBLISH_SECS, 10) - parseInt(sSeconds, 10)) + " seconds";
+                oStatus.bulletin.facebook = "retry in " + (parseInt(sMinRepublishSecs, 10) - parseInt(sSeconds, 10)) + " seconds";
 
                 return {
                     status: "error",
