@@ -149,7 +149,9 @@ function newGithubFile(sContent, sGithubPath, sSha) {
 var appRouter = function (app) {
     var oEnv = getEnv();
     var oStatus = {
-        bulletin: {}
+        bulletin: {
+            facebook: "success"
+        }
     };
 
     app.use( bodyParser.json() );
