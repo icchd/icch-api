@@ -50,6 +50,7 @@ function publishToFacebook(sPermanentAccessToken, sMessage, sLink, isRealPublish
 }
 
 process.on("message", function (oData) {
+    console.log("received message" : JSON.stringify(oData, null, 3));
     checkPageExists(oData.link, function(err, sStatusCode) {
         if (err) {
             console.log("Error while publishing to facebook occurred");

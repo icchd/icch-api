@@ -306,6 +306,9 @@ var appRouter = function (app) {
                     message: oData.publish.facebookMessage || "Our bulletin for " + oData.title + " is available",
                     link: oData.publish.htmlLink
                 });
+                child.on("error", function (err) {
+                    console.log("Error from child process: " + err);
+                });
             }
 
             response.send({
