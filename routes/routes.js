@@ -352,7 +352,12 @@ var appRouter = function (app) {
             } else {
                 oPublishToFacebook.beginPublish(oPublishOpts, function (progress) {
                     oStatus.bulletin.facebook = progress;
+                }).then(function () {
+                    console.log("Publish to facebook done");
+                }, function () {
+                    console.log("Publish to facebook error");
                 });
+
                 return {
                     status: "progress", // caller must check the status
                     message: "Bulletin is being published on facebook"
