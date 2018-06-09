@@ -3,3 +3,4 @@ npm-debug.log
 .DS_Store
 /*.env
 setup-env
+README.do.not.commit.md
