@@ -321,6 +321,8 @@ var appRouter = function (app) {
                 console.log("Cannot publish to facebook yet. Must wait until "
                     + sSeconds + "/" + MIN_FACEBOOK_REPUBLISH_SECS + " seconds before retrying.");
 
+                oStatus.bulletin.facebook = "retry in " + (parseInt(MIN_FACEBOOK_REPUBLISH_SECS, 10) - parseInt(sSeconds, 10)) + " seconds";
+
                 return {
                     status: "error",
                     message: "Please wait 15 minutes before re-publishing"
