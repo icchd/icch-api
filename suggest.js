@@ -21,12 +21,16 @@ const MOMENTS_SEARCH_KEYWORDS = [
     "Gathering", "Gifts", "Communion", "Sending"
 ];
 
-let allData = {
-    sunday: null,
-    sundayLink: null,
-    musicIndexLink: null,
-    churchesIndex: []
-};
+let allData = null;
+
+function initAllData () {
+    allData = {
+        sunday: null,
+        sundayLink: null,
+        musicIndexLink: null,
+        churchesIndex: []
+    };
+}
 
 function isMomentIncluded (moment) {
     var bInclude = false;
@@ -56,6 +60,9 @@ function extractSuggestions (churchIndexUrl) {
 }
 
 function getSuggestions () {
+
+    initAllData();
+
     return request(S_SITE_URL)
         .then(($) => {
             var menu = $("#inlineFormCustomSelect > option[selected]");
