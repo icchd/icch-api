@@ -189,30 +189,6 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
-    app.post("/songs-suggestions", function (request, response) {
-        var oData = request.body;
-
-        if (oData.password !== oEnv.PASSWORD_SONG_PUBLISH) {
-            response.send({
-                success: false,
-                message: "Invalid password"
-            });
-        }
-
-        suggest.getSuggestions().then(function (oSuggestions) {
-            response.send({
-                success: true,
-                suggestions: oSuggestions
-            });
-
-        }, function (error) {
-            response.send({
-                success: false,
-                message: "Invalid password"
-            });
-        });
-    });
-
     app.post("/songs", function (request, response) {
         var oData = request.body;
 
@@ -229,7 +205,7 @@ var appRouter = function (app) {
             suggest.getSuggestions().then(function (oSuggestions) {
                 response.send({
                     success: true,
-                    suggestions: oSuggestions
+                    result: oSuggestions
                 });
 
             }, function (error) {

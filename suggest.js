@@ -147,7 +147,10 @@ function getSuggestions () {
                 });
             });
 
-            return oCollectedSuggestions;
+            return {
+                sunday: allData.sunday,
+                suggestions: oCollectedSuggestions
+            }
         })
         .catch((err) => {
             return `ERROR: ${err}. Data found so far: ${JSON.stringify(allData)}`;
