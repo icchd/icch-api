@@ -3,6 +3,7 @@ var fs = require('fs');
 var https = require("https");
 var child_process = require("child_process");
 var oPublishToFacebook = require("../publishToFacebook");
+var suggest = require("../suggest");
 
 // -- facebook publishing
 
@@ -187,6 +188,31 @@ var appRouter = function (app) {
         });
         response.send(oStatus);
     });
+
+    app.post("/songs-suggestions", function (request, response) {
+        var oData = request.body;
+
+        if (oData.password !== oEnv.PASSWORD_SONG_PUBLISH) {
+            response.send({
+                success: false,
+                message: "Invalid password"
+            });
+        }
+
+        suggest.getSuggestions(function (oSuggestions) {
+            response.send({
+                success: true,
+                suggestions: oSuggestions
+            });
+
+        }, function (error) {
+            response.send({
+                success: false,
+                message: "Invalid password"
+            });
+        });
+    });
+
     app.post("/songs", function (request, response) {
         var oData = request.body;
 
