@@ -224,36 +224,63 @@ var appRouter = function (app) {
             return;
         }
 
-        var sJsonFileName = oData.saveAs;
+        if (oData.type === "suggestions") {
 
-        delete oData.password; /* Important */
-        delete oData.saveAs;
-
-        var sSongsSource = JSON.stringify(oData, null, 3);
-
-        var sGithubPath = [
-            "/repos/icchd/songs/contents/save/",
-            sJsonFileName
-        ].join("");
-
-        // first check if the file exists
-        getGithubFile(sGithubPath).then(function (oResponse) {
-            return oResponse.sha;
-        }, function (sStatus) {
-            return null;
-        }).then(function (sSha) {
-            console.log("Making file with sha " + sSha);
-            newGithubFile(sSongsSource, sGithubPath, sSha).then(function () {   // prepare for markdown upload
+            suggest.getSuggestions().then(function (oSuggestions) {
                 response.send({
                     success: true,
-                    message: "Songs saved"
+                    suggestions: oSuggestions
                 });
-            }).catch(function (sError) {
+
+            }, function (error) {
                 response.send({
                     success: false,
-                    message: sError
+                    message: "Invalid password"
                 });
             });
+
+            return;
+        }
+
+        if (oData.type === "save") {
+            var sJsonFileName = oData.saveAs;
+
+            delete oData.password; /* Important */
+            delete oData.saveAs;
+            delete oData.type;
+
+            var sSongsSource = JSON.stringify(oData, null, 3);
+
+            var sGithubPath = [
+                "/repos/icchd/songs/contents/save/",
+                sJsonFileName
+            ].join("");
+
+            // first check if the file exists
+            getGithubFile(sGithubPath).then(function (oResponse) {
+                return oResponse.sha;
+            }, function (sStatus) {
+                return null;
+            }).then(function (sSha) {
+                console.log("Making file with sha " + sSha);
+                newGithubFile(sSongsSource, sGithubPath, sSha).then(function () {   // prepare for markdown upload
+                    response.send({
+                        success: true,
+                        message: "Songs saved"
+                    });
+                }).catch(function (sError) {
+                    response.send({
+                        success: false,
+                        message: sError
+                    });
+                });
+            });
+            return;
+        }
+
+        response.send({
+            success: false,
+            message: "Invalid request type"
         });
     });
     app.post("/bulletin", function (request, response) {
