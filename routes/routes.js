@@ -199,7 +199,7 @@ var appRouter = function (app) {
             });
         }
 
-        suggest.getSuggestions(function (oSuggestions) {
+        suggest.getSuggestions().then(function (oSuggestions) {
             response.send({
                 success: true,
                 suggestions: oSuggestions
