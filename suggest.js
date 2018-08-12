@@ -56,7 +56,7 @@ function extractSuggestions (churchIndexUrl) {
 }
 
 function getSuggestions () {
-    request(S_SITE_URL)
+    return request(S_SITE_URL)
         .then(($) => {
             var menu = $("#inlineFormCustomSelect > option[selected]");
             var title = menu.text();
