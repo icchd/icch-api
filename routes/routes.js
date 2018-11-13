@@ -388,8 +388,9 @@ var appRouter = function (app) {
                     oStatus.bulletin.facebook = progress;
                 }).then(function () {
                     console.log("Publish to facebook done");
-                }, function () {
+                }, function (e) {
                     console.log("Publish to facebook error");
+                    console.log(e);
                 });
 
                 return {
