@@ -182,6 +182,23 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
+    app.get("/pdf", function (request, response) {
+        const puppeteer = require('puppeteer');
+
+        (async () => {
+          const browser = await puppeteer.launch();
+          const page = await browser.newPage();
+          await page.goto('https://news.ycombinator.com', {waitUntil: 'networkidle2'});
+          await page.pdf({path: 'output.pdf', format: 'A4'});
+
+          await browser.close();
+
+          response.send({
+              generate: true
+          });
+        })();
+    });
+
     app.get("/abortFacebookPublish", function (request, response) {
         oPublishToFacebook.abort(function (sStatus) {
             oStatus.bulletin.facebook = sStatus;
