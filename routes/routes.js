@@ -4,6 +4,7 @@ var https = require("https");
 var child_process = require("child_process");
 var oPublishToFacebook = require("../publishToFacebook");
 var suggest = require("../suggest");
+var getJSON = require("get-json");
 
 // -- facebook publishing
 
@@ -57,12 +58,12 @@ function getGithubFile(sGithubPath) {
                 body += d;
             });
             response.on('end', function() {
-                console.log(response.statusCode + " " + body);
+                // console.log(response.statusCode + " " + body);
 
                 // Data reception is done, do whatever with it!
                 try {
                     var parsed = JSON.parse(body);
-                    console.log(parsed);
+                    // console.log(parsed);
                     fnResolve(parsed);
                 } catch (e) {
                     console.log(e);
@@ -268,6 +269,48 @@ var appRouter = function (app) {
                     });
                 });
             });
+            return;
+        }
+
+        if (oData.type === "saveNewSong") {
+
+            delete oData.password; /* Important */
+            delete oData.type;
+
+            var sGithubPath = [
+                "/repos/icchd/songs/contents/",
+                "songs.json"
+            ].join("");
+
+            // first check if the file exists
+            getGithubFile(sGithubPath).then(function (oResponse) {
+                var sBase64EncodedFile = oResponse.content;
+                var oJSON = JSON.parse(Buffer.from(oResponse.content, oResponse.encoding));
+                return {
+                    sha: oResponse.sha,
+                    json: oJSON
+                };
+            }, function (sStatus) {
+                return null;
+            }).then(function (oJSONAndSha) {
+                var sSha = oJSONAndSha.sha;
+                var oSongs = oJSONAndSha.json;
+                oSongs.list.unshift(oData);
+                var sSongs = JSON.stringify(oSongs, null, 3);
+                console.log("Making file with sha " + sSha);
+                newGithubFile(sSongs, sGithubPath, sSha).then(function () {   // prepare for markdown upload
+                    response.send({
+                        success: true,
+                        message: "New song added"
+                    });
+                }).catch(function (sError) {
+                    response.send({
+                        success: false,
+                        message: sError
+                    });
+                });
+            });
+
             return;
         }
 
