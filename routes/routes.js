@@ -295,7 +295,7 @@ var appRouter = function (app) {
             }).then(function (oJSONAndSha) {
                 var sSha = oJSONAndSha.sha;
                 var oSongs = oJSONAndSha.json;
-                oSongs.list.unshift(oData);
+                oSongs.list.push(oData);
                 var sSongs = JSON.stringify(oSongs, null, 3);
                 console.log("Making file with sha " + sSha);
                 newGithubFile(sSongs, sGithubPath, sSha).then(function () {   // prepare for markdown upload
