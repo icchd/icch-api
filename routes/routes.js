@@ -23,6 +23,7 @@ function getEnv() {
         "GOOGLE_SHEETS_SPREADSHEET_ID",
         "GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON",
         "GOOGLE_SHEETS_CREDENTIALS_JSON",
+        "PASSWORD_AUTOMATIC_EMAILS",
         "FACEBOOK_IS_REAL_PUBLISH",
         "PASSWORD_BULLETIN_PUBLISH",
         "MIN_FACEBOOK_REPUBLISH_SECS",
@@ -212,7 +213,16 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
-    app.get("/icch-schedule-check", function (request, response) {
+    app.post("/icch-schedule-check", function (request, response) {
+        var oData = request.body;
+        if (oData.password !== oEnv.PASSWORD_AUTOMATIC_EMAILS) {
+            response.send({
+                success: false,
+                message: "Invalid password"
+            });
+            return;
+        }
+
         oScheduleChecker.triggerWebhook({
             dryRun: oEnv.DRY_RUN === "true",
             sundayScheduleCompletedWebhookURL: oEnv.SUNDAY_SCHEDULE_COMPLETED_WEBHOOK_URL,
