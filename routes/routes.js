@@ -5,6 +5,7 @@ var child_process = require("child_process");
 var oPublishToFacebook = require("../publishToFacebook");
 var suggest = require("../suggest");
 var getJSON = require("get-json");
+var oScheduleChecker = require("../scheduleChecker");
 
 // -- facebook publishing
 
@@ -18,6 +19,10 @@ function getEnv() {
     var oEnv = { };
     [
         "FACEBOOK_PERMANENT_ACCESS_TOKEN",
+        "SUNDAY_SCHEDULE_COMPLETED_WEBHOOK_URL",
+        "GOOGLE_SHEETS_SPREADSHEET_ID",
+        "GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON",
+        "GOOGLE_SHEETS_CREDENTIALS_JSON",
         "FACEBOOK_IS_REAL_PUBLISH",
         "PASSWORD_BULLETIN_PUBLISH",
         "MIN_FACEBOOK_REPUBLISH_SECS",
@@ -205,6 +210,37 @@ var appRouter = function (app) {
             oStatus.bulletin.facebook = sStatus;
         });
         response.send(oStatus);
+    });
+
+    app.get("/icch-schedule-check", function (request, response) {
+        oScheduleChecker.triggerWebhook({
+            dryRun: oEnv.DRY_RUN === "true",
+            sundayScheduleCompletedWebhookURL: oEnv.SUNDAY_SCHEDULE_COMPLETED_WEBHOOK_URL,
+            spreadsheetId: oEnv.GOOGLE_SHEETS_SPREADSHEET_ID,
+            authorization: {
+                format: "inline", /* inline | file */
+                credentials: oEnv.GOOGLE_SHEETS_CREDENTIALS_JSON,
+                accessToken: oEnv.GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON
+            },
+            ranges: {
+                quartersInSpreadsheet: [
+                    "1st quarter",
+                    "2nd quarter",
+                    "3rd quarter",
+                    "4th quarter"
+                ],
+                wholeDataRange: "A1:H30"
+            }
+        }).then(function (oStatus) {
+            response.send({
+                success: true
+            });
+        }, function (oCustomError) {
+            response.send({
+                success: false,
+                message: oCustomError.message
+            });
+        });
     });
 
     app.post("/songs", function (request, response) {
