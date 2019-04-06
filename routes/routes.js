@@ -6,6 +6,7 @@ var oPublishToFacebook = require("../publishToFacebook");
 var suggest = require("../suggest");
 var getJSON = require("get-json");
 var oScheduleChecker = require("../scheduleChecker");
+var request = require("request");
 
 // -- facebook publishing
 
