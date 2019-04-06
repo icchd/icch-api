@@ -6,7 +6,7 @@ var oPublishToFacebook = require("../publishToFacebook");
 var suggest = require("../suggest");
 var getJSON = require("get-json");
 var oScheduleChecker = require("../scheduleChecker");
-var request = require("request");
+var Request = require("request");
 
 // -- facebook publishing
 
@@ -250,7 +250,7 @@ var appRouter = function (app) {
         }, function (oCustomError) {
 
             // notify via service as well
-            request.post(
+            Request.post(
                 oEnv.SUNDAY_SCHEDULE_ERROR_WEBHOOK_URL,
                 {
                     json: {
