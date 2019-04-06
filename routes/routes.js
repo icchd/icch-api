@@ -20,6 +20,7 @@ function getEnv() {
     [
         "FACEBOOK_PERMANENT_ACCESS_TOKEN",
         "SUNDAY_SCHEDULE_COMPLETED_WEBHOOK_URL",
+        "SUNDAY_SCHEDULE_ERROR_WEBHOOK_URL",
         "GOOGLE_SHEETS_SPREADSHEET_ID",
         "GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON",
         "GOOGLE_SHEETS_CREDENTIALS_JSON",
@@ -246,6 +247,24 @@ var appRouter = function (app) {
                 success: true
             });
         }, function (oCustomError) {
+
+            // notify via service as well
+            request.post(
+                oEnv.SUNDAY_SCHEDULE_ERROR_WEBHOOK_URL,
+                {
+                    json: {
+                        value1: oCustomError.message
+                    }
+                },
+                (error, response, body) => {
+                    if (!error && response.statusCode === 200) {
+                        console.log("Got successful response from service after calling failure webhook: " + body);
+                        return;
+                    }
+                    console.log("Failed to call failure webhook: " + error);
+                }
+            );
+
             response.send({
                 success: false,
                 message: oCustomError.message

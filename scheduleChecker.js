@@ -123,7 +123,7 @@ function mergeRowsTwoByTwo (aRows) {
             Object.keys(oNextRow).forEach((sKey) => {
                 var vValueToConcatenate = oNextRow[sKey];
 
-                if (typeof vValueToConcatenate === "string" && 
+                if (typeof vValueToConcatenate === "string" &&
                         vValueToConcatenate.length > 0) {
                     aRowToMergeWith[sKey] += " " + oNextRow[sKey];
                 }
