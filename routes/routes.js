@@ -255,7 +255,7 @@ var appRouter = function (app) {
                 oEnv.SUNDAY_SCHEDULE_ERROR_WEBHOOK_URL,
                 {
                     json: {
-                        value1: oCustomError.message
+                        value1: oCustomError.message + "<br /> Stack:" + oCustomError.stack
                     }
                 },
                 (error, response, body) => {
