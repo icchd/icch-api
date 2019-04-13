@@ -243,7 +243,7 @@ var appRouter = function (app) {
                 ],
                 wholeDataRange: "A1:H50"
             },
-            aFieldNames: ["set-up", "pick-up", "priest", "lector", "em"]
+            fieldNames: ["set-up", "pick-up", "priest", "lector", "em"]
         }).then(function (oStatus) {
             response.send({
                 success: true
