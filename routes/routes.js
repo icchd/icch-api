@@ -53,7 +53,7 @@ function getEnv() {
 function getGithubFile(sGithubPath) {
     return new Promise(function (fnResolve, fnReject) {
         https.get({
-            host: 'api.github.com',
+            host: "api.github.com",
             path: sGithubPath,
             headers: {
                 "User-agent": "Songs App"
@@ -241,7 +241,7 @@ var appRouter = function (app) {
                     "3rd quarter",
                     "4th quarter"
                 ],
-                wholeDataRange: "A1:H30"
+                wholeDataRange: "A1:H50"
             }
         }).then(function (oStatus) {
             response.send({

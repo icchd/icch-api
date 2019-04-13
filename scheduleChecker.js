@@ -5,8 +5,8 @@ const cellParser = require("./lib/cellParser");
 const Errors = require("./errors");
 const request = require("request");
 
-async function triggerWebhook (oConfig) {
 
+async function triggerWebhook (oConfig) {
     const {
         dryRun: bDryRun,
         sundayScheduleCompletedWebhookURL: sSundayScheduleCompletedWebhookURL,
@@ -20,11 +20,7 @@ async function triggerWebhook (oConfig) {
         ranges: sRangesJSON
     });
 
-    const bAllFieldsSpecified = Object.keys(oNextSundayRecord).every((sKey) => oNextSundayRecord[sKey]);
-
-    if (!bAllFieldsSpecified) {
-        throw new Errors.MissingRowsError();
-    }
+    validateSundayRecordFields(oNextSundayRecord, ["set-up", "pick-up", "priest", "lector", "em"]);
 
     const sEmailBody = prepareEmailBodyHTML(oNextSundayRecord);
     const sEmailSubjectDate = moment().weekday(7).format("ll");
@@ -59,6 +55,19 @@ async function triggerWebhook (oConfig) {
     return bSuccess;
 }
 
+function validateSundayRecordFields (oNextSundayRecord, aExpectedFilledFields) {
+    const aMissingFields = getFieldsWithoutValue(oNextSundayRecord, aExpectedFilledFields);
+    const bAllFieldsHaveValue = aMissingFields.length === 0;
+    if (!bAllFieldsHaveValue) {
+        throw new Errors.MissingRowsError({
+            missingFields: aMissingFields.join(", ")
+        });
+    }
+}
+
+function getFieldsWithoutValue (oNextSundayRecord, aFieldNames) {
+    return aFieldNames.filter((sKey) => !oNextSundayRecord[sKey]);
+}
 
 async function findNextSundayRecord (sSpreadsheetId, oConfig) {
     var aSpreadsheetJSON = await readSpreadsheetAsJson(sSpreadsheetId, oConfig);
@@ -189,12 +198,19 @@ function prepareEmailBodyHTML (oNextSundayRecord) {
 <b>2nd Reading 2</b> &rarr; ${oNextSundayRecord.lector.split(" ")[1]}<br />
 <br />
 <b>Eucharistic Minister</b> &rarr; ${oNextSundayRecord.em}<br />
-<br />
-<b>Music</b> &rarr; ${oNextSundayRecord.music}<br />
 `;
 
 }
 
+function getFunctionForTest (sFunctionName) {
+    const oAvailableFunctions = {
+        validateSundayRecordFields
+    };
+
+    return oAvailableFunctions[sFunctionName];
+}
+
 module.exports = {
-    triggerWebhook
+    triggerWebhook,
+    getFunctionForTest
 };
