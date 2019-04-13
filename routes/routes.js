@@ -242,7 +242,8 @@ var appRouter = function (app) {
                     "4th quarter"
                 ],
                 wholeDataRange: "A1:H50"
-            }
+            },
+            aFieldNames: ["set-up", "pick-up", "priest", "lector", "em"]
         }).then(function (oStatus) {
             response.send({
                 success: true

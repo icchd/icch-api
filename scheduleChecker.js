@@ -12,19 +12,22 @@ async function triggerWebhook (oConfig) {
         sundayScheduleCompletedWebhookURL: sSundayScheduleCompletedWebhookURL,
         spreadsheetId: sSpreadsheetId,
         authorization: sAuthorizationJSON,
-        ranges: sRangesJSON
+        ranges: sRangesJSON,
+        fieldNames: aFieldNames
     } = oConfig;
 
-    const oNextSundayRecord = await findNextSundayRecord(sSpreadsheetId, {
+    var aSpreadsheetJSON = await readSpreadsheetAsJson(sSpreadsheetId, {
         authorization: sAuthorizationJSON,
         ranges: sRangesJSON
     });
 
-    validateSundayRecordFields(oNextSundayRecord, ["set-up", "pick-up", "priest", "lector", "em"]);
+    const oNextSundayRecord = findNextSundayRecord(aSpreadsheetJSON);
+
+    validateSundayRecordFields(oNextSundayRecord, aFieldNames);
 
     const sEmailBody = prepareEmailBodyHTML(oNextSundayRecord);
     const sEmailSubjectDate = moment().weekday(7).format("ll");
-    const bIsSocialGathering = oNextSundayRecord.activities.toLowerCase().indexOf("social") >= 0;
+    const bIsSocialGathering = oNextSundayRecord.activities.join(" ").toLowerCase().indexOf("social") >= 0;
 
     const oWebhooksPostParams = {
         "value1": sEmailBody,
@@ -66,15 +69,11 @@ function validateSundayRecordFields (oNextSundayRecord, aExpectedFilledFields) {
 }
 
 function getFieldsWithoutValue (oNextSundayRecord, aFieldNames) {
-    return aFieldNames.filter((sKey) => !oNextSundayRecord[sKey]);
+    return aFieldNames.filter((sKey) => !oNextSundayRecord[sKey] || oNextSundayRecord[sKey].length === 0);
 }
 
-async function findNextSundayRecord (sSpreadsheetId, oConfig) {
-    var aSpreadsheetJSON = await readSpreadsheetAsJson(sSpreadsheetId, oConfig);
-
-    const aRows = mergeRowsTwoByTwo(aSpreadsheetJSON);
-
-    updateFields(aRows, "date", cellParser.parseDate);
+function findNextSundayRecord (aSpreadsheetJSON) {
+    const aRows = parseRows(aSpreadsheetJSON, "date");
 
     const oNextSunday = moment().weekday(7);
 
@@ -101,7 +100,7 @@ async function readSpreadsheetAsJson (sSpreadsheetId, oConfig) {
 
     const sQuarter = getDateQuarter(oNextSunday, oRangesConfig.quartersInSpreadsheet);
 
-    console.log(`Got quarted ${sQuarter} for ${oNextSunday.format("DD/MM/YYYY")}`);
+    console.log(`Got quarter ${sQuarter} for ${oNextSunday.format("DD/MM/YYYY")}`);
 
     const sWholeSpreadsheetRange = oRangesConfig.wholeDataRange;
 
@@ -122,25 +121,62 @@ async function readSpreadsheetAsJson (sSpreadsheetId, oConfig) {
     return aSpreadsheetJSON;
 }
 
-function mergeRowsTwoByTwo (aRows) {
-    return aRows.reduce((aRows, oNextRow, iIdx) => {
-        var bEvenIdx = iIdx % 2 === 0;
-        if (bEvenIdx) {
-            aRows.push(oNextRow);
-        } else {
-            const aRowToMergeWith = aRows[aRows.length - 1];
-            Object.keys(oNextRow).forEach((sKey) => {
-                var vValueToConcatenate = oNextRow[sKey];
+function parseRows (aRows, sLeadingFieldName) {
+    if (!sLeadingFieldName) {
+        throw new Error("Leading field name was not given");
+    }
 
-                if (typeof vValueToConcatenate === "string" &&
-                        vValueToConcatenate.length > 0) {
-                    aRowToMergeWith[sKey] += " " + oNextRow[sKey];
-                }
-            });
+    var aRowsParsed = aRows.reduce((aRows, oNextRow) => {
+        const bNoFieldHasValue = Object.keys(oNextRow).map((sKey) => oNextRow[sKey]).join("").trim().length === 0;
+        if (bNoFieldHasValue) {
+            return aRows;
+        }
+
+        const sLeadingFieldValue = oNextRow[sLeadingFieldName];
+
+        if (oNextRow[sLeadingFieldName]) {
+            const oNewRecord = createNewRecord(oNextRow);
+            aRows.push(oNewRecord);
+        } else {
+            const oPreviousRecord = aRows.length > 0 ? aRows[aRows.length - 1] : null;
+            mergeRecord(oPreviousRecord, oNextRow);
         }
 
         return aRows;
     }, []);
+
+    updateFields(aRowsParsed, "date", ([sDate]) => cellParser.parseDate(sDate));
+
+    return aRowsParsed;
+
+    function createNewRecord(oSourceRow) {
+        return Object.keys(oSourceRow).reduce(
+            (oTarget, sKey) => {
+                const sSourceRowValue = oSourceRow[sKey];
+                oTarget[sKey] = sSourceRowValue ? [sSourceRowValue] : [];
+                return oTarget;
+            },
+            {}
+        );
+    }
+
+    function mergeRecord (oTargetRecord, oRecordToMerge) {
+        const sTargetKeys = Object.keys(oTargetRecord).sort().join(", ");
+        const sToMergeKeys = Object.keys(oRecordToMerge).sort().join(", ");
+
+        if (sTargetKeys !== sToMergeKeys) {
+            throw new Error(`Target record and merging record don't have the same keys!\nTarget: ${sTargetKeys}\nMerging: ${sToMergeKeys}`);
+        }
+
+        Object.keys(oTargetRecord).forEach(
+            (sKey) => {
+                const sValueToMerge = oRecordToMerge[sKey];
+                if (sValueToMerge) {
+                    oTargetRecord[sKey].push(sValueToMerge);
+                }
+            }
+        );
+    }
 }
 
 function updateFields (aRows, sFieldId, fnUpdate) {
@@ -186,25 +222,50 @@ function getDateQuarter (oDate, aPossibleQuarters) {
 
 function prepareEmailBodyHTML (oNextSundayRecord) {
 
+    function formatPickup (aPickupRecord) {
+        switch (aPickupRecord.length) {
+            case 0:
+                return "N/D";
+            case 1:
+                return aPickupRecord[0];
+            default:
+                return `${aPickupRecord[0]} (main), ${aPickupRecord[1]} (backup)`;
+        }
+    }
+
+    function formatLectors (aLectorsRecord) {
+        switch (aPickupRecord.length) {
+            case 0:
+                return "No lector";
+            case 1:
+                return `<b>1st and 2nd Reading</b> &rarr; ${aLectorsRecord[0]}<br />`;
+            case 2:
+                return `<b>1st Reading</b> &rarr; ${aLectorsRecord[0]}<br />`
+                    + `<b>2nd Reading</b> &rarr; ${aLectorsRecord[1]}<br />`;
+            default:
+                return aLectorsRecord.map((sName, iIdx) => `<b>Reading ${iIdx + 1}1</b> &rarr; ${sName}<br />`);
+        }
+    }
+
     return `<br />
-<b>Priest</b> &rarr; ${oNextSundayRecord.priest}<br />
+<b>Priest</b> &rarr; ${oNextSundayRecord.priest.join(", ")}<br />
 <br />
-<b>Priest pick-up</b> &rarr; ${oNextSundayRecord["pick-up"]}<br />
+<b>Priest pick-up</b> &rarr; ${formatPickup(oNextSundayRecord["pick-up"])}<br />
 <br />
-<b>Mass Set-up</b> &rarr; ${oNextSundayRecord["set-up"]}<br />
+<b>Mass Set-up</b> &rarr; ${oNextSundayRecord["set-up"].join(", ")}<br />
 <br />
 <b>Lectors:</b><br />
-<b>1st Reading 1</b> &rarr; ${oNextSundayRecord.lector.split(" ")[0]}<br />
-<b>2nd Reading 2</b> &rarr; ${oNextSundayRecord.lector.split(" ")[1]}<br />
+${formatLectors(oNextSundayRecord.lector)}
 <br />
-<b>Eucharistic Minister</b> &rarr; ${oNextSundayRecord.em}<br />
+<b>Eucharistic Minister</b> &rarr; ${oNextSundayRecord.em.join(", ")}<br />
 `;
 
 }
 
 function getFunctionForTest (sFunctionName) {
     const oAvailableFunctions = {
-        validateSundayRecordFields
+        validateSundayRecordFields,
+        parseRows
     };
 
     return oAvailableFunctions[sFunctionName];

@@ -249,7 +249,7 @@
         "prefer-template": "off",
         "quote-props": "off",
         "quotes": [
-            "error",
+            "warning",
             "double"
         ],
         "radix": "error",

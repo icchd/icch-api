@@ -6,7 +6,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "mocha --reporter=spec"
+    "test": "mocha --reporter=spec",
+    "test-debug": "mocha --inspect-brk --reporter=spec"
   },
   "author": "Savio Dimatteo",
   "license": "ISC",
