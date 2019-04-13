@@ -234,7 +234,7 @@ function prepareEmailBodyHTML (oNextSundayRecord) {
     }
 
     function formatLectors (aLectorsRecord) {
-        switch (aPickupRecord.length) {
+        switch (aLectorsRecord.length) {
             case 0:
                 return "No lector";
             case 1:
