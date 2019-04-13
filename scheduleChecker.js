@@ -243,7 +243,7 @@ function prepareEmailBodyHTML (oNextSundayRecord) {
                 return `<b>1st Reading</b> &rarr; ${aLectorsRecord[0]}<br />`
                     + `<b>2nd Reading</b> &rarr; ${aLectorsRecord[1]}<br />`;
             default:
-                return aLectorsRecord.map((sName, iIdx) => `<b>Reading ${iIdx + 1}1</b> &rarr; ${sName}<br />`);
+                return aLectorsRecord.map((sName, iIdx) => `<b>Reading ${iIdx + 1}</b> &rarr; ${sName}<br />`).join("");
         }
     }
 
