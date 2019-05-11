@@ -247,8 +247,6 @@ function prepareEmailBodyHTML (oNextSundayRecord) {
         }
     }
 
-    const readingLink = `http://www.usccb.org/bible/readings/${oNextSundayRecord.date.format("MMDDYY")}.cfm`;
-
     return `<br />
 <b>Priest</b> &rarr; ${oNextSundayRecord.priest.join(", ")}<br />
 <br />
@@ -258,7 +256,6 @@ function prepareEmailBodyHTML (oNextSundayRecord) {
 <br />
 <b>Lectors:</b><br />
 ${formatLectors(oNextSundayRecord.lector)}
-You can find the readings <a href="${readingLink}">here</a>.<br />
 <br />
 <b>Eucharistic Minister</b> &rarr; ${oNextSundayRecord.em.join(", ")}<br />
 `;
