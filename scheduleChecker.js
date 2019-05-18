@@ -1,7 +1,7 @@
 const fnGetGoogleSpreadsheetAsJSON = require("./lib/spreadsheetReader");
 const GoogleAuth = require("./lib/googleAuth");
 const moment = require("moment");
-const cellParser = require("./lib/cellParser");
+const dateParser = require("./lib/dateParser");
 const Errors = require("./errors");
 const request = require("request");
 
@@ -145,7 +145,7 @@ function parseRows (aRows, sLeadingFieldName) {
         return aRows;
     }, []);
 
-    updateFields(aRowsParsed, "date", ([sDate]) => cellParser.parseDate(sDate));
+    updateFields(aRowsParsed, "date", ([sDate]) => dateParser.parseDate(sDate));
 
     return aRowsParsed;
 

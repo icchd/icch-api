@@ -1,17 +1,13 @@
 var bodyParser = require("body-parser");
-var fs = require('fs');
-var https = require("https");
 var child_process = require("child_process");
 var oPublishToFacebook = require("../publishToFacebook");
 var suggest = require("../suggest");
-var getJSON = require("get-json");
 var oScheduleChecker = require("../scheduleChecker");
 var Request = require("request");
 
-// -- facebook publishing
+// -- github operations
+const oGithubApi = require("./lib/githubApi.js");
 
-const StringDecoder = require('string_decoder').StringDecoder;
-const decoder = new StringDecoder('utf8');
 const DEFAULT_MIN_FACEBOOK_REPUBLISH_SECS = 900000;
 
 var lastFacebookPublishDate = 0;
@@ -36,7 +32,7 @@ function getEnv() {
         "GITHUB_COMMITTER_NAME",
         "GITHUB_COMMITTER_EMAIL",
         "BULLETIN_FORK_FACEBOOK_PUBLISH"
-    ].forEach(function (sVar) {
+    ].forEach((sVar) => {
         if (process.env[sVar]) {
             oEnv[sVar] = process.env[sVar];
         }
@@ -50,113 +46,6 @@ function getEnv() {
 }
 
 
-function getGithubFile(sGithubPath) {
-    return new Promise(function (fnResolve, fnReject) {
-        https.get({
-            host: "api.github.com",
-            path: sGithubPath,
-            headers: {
-                "User-agent": "Songs App"
-            }
-        }, function (response) {
-
-            // Continuously update stream with data
-            var body = '';
-            response.on('data', function(d) {
-                body += d;
-            });
-            response.on('end', function() {
-                // console.log(response.statusCode + " " + body);
-
-                // Data reception is done, do whatever with it!
-                try {
-                    var parsed = JSON.parse(body);
-                    // console.log(parsed);
-                    fnResolve(parsed);
-                } catch (e) {
-                    console.log(e);
-                    fnReject();
-                }
-            });
-        }).on('error', function (e) {
-            fnReject();
-        });
-    });
-}
-
-function newGithubFile(sContent, sGithubPath, sSha) {
-    return new Promise(function (fnResolve, fnReject) {
-
-        var oEnv = getEnv();
-
-        var sPostData,
-            oPostData,
-            sContentBase64;
-
-        try {
-            sContentBase64 = (new Buffer(sContent)).toString("base64");
-
-            oPostData = {
-                "message": "Upload " + sGithubPath.split("/").reverse()[0],
-                "committer": { "name": oEnv.GITHUB_COMMITTER_NAME, "email": oEnv.GITHUB_COMMITTER_EMAIL },
-                "content": sContentBase64,
-            };
-            if (sSha) {
-                oPostData.sha = sSha;
-            }
-
-            sPostData = JSON.stringify(oPostData);
-        } catch (oErr) {
-            console.log("ERROR:" + oErr);
-            fnReject("Unexpected error occurred while parsing POST data");
-            return;
-        }
-
-        try {
-            var sResponse = "";
-            var oRequestData = {
-                host: 'api.github.com',
-                port: 443,
-                path: sGithubPath,
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(sPostData),
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': 'Basic ' + oEnv.GITHUB_API_BASIC_AUTH,
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36'
-                }
-            };
-
-            console.log("DRY_RUN: " + oEnv.DRY_RUN);
-            if (oEnv.DRY_RUN === "true") {
-                console.log("dry run: sending post request to api.github.com");
-                fnResolve();
-                return;
-            }
-
-            var oPostRequest = https.request(oRequestData, function(res) {
-                res.setEncoding('utf8');
-                if (res.statusCode === 200 || res.statusCode === 201) {
-                    fnResolve();
-                } else {
-                    fnReject("Request failed with status " + res.statusCode);
-                }
-                res.on('data', function (chunk) {
-                    console.log('BODY: ' + chunk);
-                });
-            });
-
-            oPostRequest.write(sPostData);
-            oPostRequest.end();
-        } catch (oErr) {
-            console.log("ERROR:" + oErr);
-            fnReject("Unexpected error occurred while saving to " + sGithubPath);
-        }
-
-    });
-}
-
 var appRouter = function (app) {
     var oEnv = getEnv();
     var oStatus = {
@@ -165,40 +54,49 @@ var appRouter = function (app) {
         }
     };
 
-    app.use( bodyParser.json() );
-    app.use( bodyParser.urlencoded({
+    var oGithubApiOptions = {
+        committerName: oEnv.GITHUB_COMMITTER_NAME,
+        committerEmail: oEnv.GITHUB_COMMITTER_EMAIL,
+        apiBasicAuth: oEnv.GITHUB_API_BASIC_AUTH,
+        isDryRun: Boolean(oEnv.DRY_RUN)
+    };
+    var newGithubFile = oGithubApi.newGithubFile.bind(null, oGithubApiOptions);
+    var getGithubFile = oGithubApi.getGithubFile.bind(null, oGithubApiOptions);
+
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({
         extended: true
     }));
-    app.use(function(req, res, next) {
-      res.header('Access-Control-Allow-Origin', oEnv.ALLOWED_HOST);
-      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    app.use((req, res, next) => {
+      res.header("Access-Control-Allow-Origin", oEnv.ALLOWED_HOST);
+      res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       next();
     });
-    app.get("/bulletin-list", function (request, response) {
+    app.get("/bulletin-list", (request, response) => {
         response.send({
             success: true,
             files: []
-        })
+        });
     });
-    app.get("/ping", function (request, response) {
+    app.get("/ping", (request, response) => {
         response.send({
             success: true,
             message: "PONG"
         });
     });
-    app.get("/status", function (request, response) {
+    app.get("/status", (request, response) => {
         response.send(oStatus);
     });
 
-    app.get("/pdf", function (request, response) {
-        const puppeteer = require('puppeteer');
+    app.get("/pdf", (request, response) => {
+        const puppeteer = require("puppeteer");
 
         (async () => {
           const browser = await puppeteer.launch();
           const page = await browser.newPage();
-          await page.goto('https://news.ycombinator.com', {waitUntil: 'networkidle2'});
-          await page.pdf({path: 'output.pdf', format: 'A4'});
+          await page.goto("https://news.ycombinator.com", {waitUntil: "networkidle2"});
+          await page.pdf({path: "output.pdf", format: "A4"});
 
           await browser.close();
 
@@ -208,14 +106,14 @@ var appRouter = function (app) {
         })();
     });
 
-    app.get("/abortFacebookPublish", function (request, response) {
-        oPublishToFacebook.abort(function (sStatus) {
+    app.get("/abortFacebookPublish", (request, response) => {
+        oPublishToFacebook.abort((sStatus) => {
             oStatus.bulletin.facebook = sStatus;
         });
         response.send(oStatus);
     });
 
-    app.post("/icch-schedule-check", function (request, response) {
+    app.post("/icch-schedule-check", (request, response) => {
         var oData = request.body;
         if (oData.password !== oEnv.PASSWORD_AUTOMATIC_EMAILS) {
             response.send({
@@ -244,11 +142,11 @@ var appRouter = function (app) {
                 wholeDataRange: "A1:H50"
             },
             fieldNames: ["set-up", "pick-up", "priest", "lector", "em"]
-        }).then(function (oStatus) {
+        }).then((oStatus) => {
             response.send({
                 success: true
             });
-        }, function (oCustomError) {
+        }, (oCustomError) => {
 
             // notify via service as well
             Request.post(
@@ -274,7 +172,7 @@ var appRouter = function (app) {
         });
     });
 
-    app.post("/songs", function (request, response) {
+    app.post("/songs", (request, response) => {
         var oData = request.body;
 
         if (oData.password !== oEnv.PASSWORD_SONG_PUBLISH) {
@@ -287,13 +185,13 @@ var appRouter = function (app) {
 
         if (oData.type === "suggestions") {
 
-            suggest.getSuggestions().then(function (oSuggestions) {
+            suggest.getSuggestions().then((oSuggestions) => {
                 response.send({
                     success: true,
                     result: oSuggestions
                 });
 
-            }, function (error) {
+            }, (error) => {
                 response.send({
                     success: false,
                     message: "Invalid password"
@@ -318,18 +216,14 @@ var appRouter = function (app) {
             ].join("");
 
             // first check if the file exists
-            getGithubFile(sGithubPath).then(function (oResponse) {
-                return oResponse.sha;
-            }, function (sStatus) {
-                return null;
-            }).then(function (sSha) {
+            getGithubFile(sGithubPath).then((oResponse) => oResponse.sha, (sStatus) => null).then((sSha) => {
                 console.log("Making file with sha " + sSha);
-                newGithubFile(sSongsSource, sGithubPath, sSha).then(function () {   // prepare for markdown upload
+                newGithubFile(sSongsSource, sGithubPath, sSha).then(() => {   // prepare for markdown upload
                     response.send({
                         success: true,
                         message: "Songs saved"
                     });
-                }).catch(function (sError) {
+                }).catch((sError) => {
                     response.send({
                         success: false,
                         message: sError
@@ -350,27 +244,25 @@ var appRouter = function (app) {
             ].join("");
 
             // first check if the file exists
-            getGithubFile(sGithubPath).then(function (oResponse) {
+            getGithubFile(sGithubPath).then((oResponse) => {
                 var sBase64EncodedFile = oResponse.content;
                 var oJSON = JSON.parse(Buffer.from(oResponse.content, oResponse.encoding));
                 return {
                     sha: oResponse.sha,
                     json: oJSON
                 };
-            }, function (sStatus) {
-                return null;
-            }).then(function (oJSONAndSha) {
+            }, (sStatus) => null).then((oJSONAndSha) => {
                 var sSha = oJSONAndSha.sha;
                 var oSongs = oJSONAndSha.json;
                 oSongs.list.push(oData);
                 var sSongs = JSON.stringify(oSongs, null, 3);
                 console.log("Making file with sha " + sSha);
-                newGithubFile(sSongs, sGithubPath, sSha).then(function () {   // prepare for markdown upload
+                newGithubFile(sSongs, sGithubPath, sSha).then(() => {   // prepare for markdown upload
                     response.send({
                         success: true,
                         message: "New song added"
                     });
-                }).catch(function (sError) {
+                }).catch((sError) => {
                     response.send({
                         success: false,
                         message: sError
@@ -386,7 +278,7 @@ var appRouter = function (app) {
             message: "Invalid request type"
         });
     });
-    app.post("/bulletin", function (request, response) {
+    app.post("/bulletin", (request, response) => {
         var oData = request.body;
 
         if (oData.password !== oEnv.PASSWORD_BULLETIN_PUBLISH) {
@@ -411,7 +303,7 @@ var appRouter = function (app) {
             sJsonFileName
         ].join("-");
 
-        var oCanPublishToFacebookPromise = new Promise(function (fnResolve) {
+        var oCanPublishToFacebookPromise = new Promise((fnResolve) => {
             if (!oData.publish.icch) {
                 fnResolve();
                 return;
@@ -419,36 +311,36 @@ var appRouter = function (app) {
 
             console.log("Publishing to ICCH");
             // first save as archive
-            newGithubFile(sBullettinSource, sGithubPath).then(function () {   // prepare for markdown upload
-                var sGithubPath = '/repos/icchd/icchd.github.io/contents/_bulletins/' + oData.saveAs;
+            newGithubFile(sBullettinSource, sGithubPath).then(() => {   // prepare for markdown upload
+                var sGithubPath = "/repos/icchd/icchd.github.io/contents/_bulletins/" + oData.saveAs;
                 var sBullettin = [
-                    '---',
-                    'title: ICCH Bulletin of ' + oData.date,
-                    'date: ' + oData.dateChanged,
-                    'layout: post',
-                    '---',
-                    '',
-                    '# ' + oData.date + " " + oData.title,
-                    '<span style="float: right"><em>' + oData.father + '</em></span>',
-                    '**Today\'s Readings:** ' + oData.reading1 + " | " + oData.reading2 + " | " + oData.reading3,
-                    '',
-                    '',
-                    oData.image.enabled ? '<img style="float: left; margin-right: 1em;" src="' + oData.image.src + '">' : "",
-                    '',
+                    "---",
+                    "title: ICCH Bulletin of " + oData.date,
+                    "date: " + oData.dateChanged,
+                    "layout: post",
+                    "---",
+                    "",
+                    "# " + oData.date + " " + oData.title,
+                    "<span style=\"float: right\"><em>" + oData.father + "</em></span>",
+                    "**Today's Readings:** " + oData.reading1 + " | " + oData.reading2 + " | " + oData.reading3,
+                    "",
+                    "",
+                    oData.image.enabled ? "<img style=\"float: left; margin-right: 1em;\" src=\"" + oData.image.src + "\">" : "",
+                    "",
                     oData.text,
-                    '',
-                    (oData.source && oData.source.indexOf("Source") === -1 ? 'Source: ' : "") + oData.source,
-                    '',
-                    oData.appointments.length ? '### News ' : "",
-                    '',
-                    oData.appointments.map(function (o) { return "* **" + o.date + "** - " + o.description }).join("\n"),
-                    ''
+                    "",
+                    (oData.source && oData.source.indexOf("Source") === -1 ? "Source: " : "") + oData.source,
+                    "",
+                    oData.appointments.length ? "### News " : "",
+                    "",
+                    oData.appointments.map((o) => "* **" + o.date + "** - " + o.description).join("\n"),
+                    ""
                 ].join("\n");
 
                 return newGithubFile(sBullettin, sGithubPath);
-            }).then(function () {
+            }).then(() => {
                 fnResolve();
-            }).catch(function (sError) {
+            }).catch((sError) => {
                 response.send({
                     success: false,
                     message: sError
@@ -456,11 +348,9 @@ var appRouter = function (app) {
             });
         });
 
-        oCanPublishToFacebookPromise.then(function () {
-            return publishToFacebook(oData);
-        }).then(function (oResult) {
+        oCanPublishToFacebookPromise.then(() => publishToFacebook(oData)).then((oResult) => {
             var oResponse = {};
-            oResponse.success = oResult.status === "error" ? false : true;
+            oResponse.success = oResult.status !== "error";
             oResponse.message = oResult.message;
             oResponse.path = "/" + oData.saveAs;
         });
@@ -468,7 +358,7 @@ var appRouter = function (app) {
 
     function publishToFacebook(oData) {
         // cancel previous operation if any is ongoing
-        oPublishToFacebook.abort(function (progress) {
+        oPublishToFacebook.abort((progress) => {
             oStatus.bulletin.facebook = progress;
         });
 
@@ -477,8 +367,8 @@ var appRouter = function (app) {
         if (oData.publish.facebook) {
             var sSeconds = new Date().getTime() - lastFacebookPublishDate;
             if (sSeconds <= sMinRepublishSecs) {
-                console.log("Cannot publish to facebook yet. Must wait until "
-                    + sSeconds + "/" + sMinRepublishSecs + " seconds before retrying.");
+                console.log("Cannot publish to facebook yet. Must wait until " +
+                    sSeconds + "/" + sMinRepublishSecs + " seconds before retrying.");
 
                 oStatus.bulletin.facebook = "retry in " + (parseInt(sMinRepublishSecs, 10) - parseInt(sSeconds, 10)) + " seconds";
 
@@ -493,7 +383,7 @@ var appRouter = function (app) {
             oStatus.bulletin.facebook = "beginning";
 
             var oPublishOpts = {
-                publishForReal: oEnv.FACEBOOK_IS_REAL_PUBLISH === "true" ? true : false,
+                publishForReal: oEnv.FACEBOOK_IS_REAL_PUBLISH === "true",
                 accessToken: oEnv.FACEBOOK_PERMANENT_ACCESS_TOKEN,
                 message: oData.publish.facebookMessage || "Our bulletin for " + oData.title + " is available",
                 link: oData.publish.htmlLink
@@ -502,7 +392,7 @@ var appRouter = function (app) {
             if (oEnv.BULLETIN_FORK_FACEBOOK_PUBLISH === "true") {
                 var child = child_process.fork("./publishToFacebook");
                 child.send(oPublishOpts);
-                child.on("error", function (err) {
+                child.on("error", (err) => {
                     console.log("Error from child process: " + err);
                 });
                 oStatus.bulletin.facebook = "success";
@@ -510,12 +400,12 @@ var appRouter = function (app) {
                     status: "success", // caller must check the status
                     message: "Process is taking care of publishing"
                 };
-            } else {
-                oPublishToFacebook.beginPublish(oPublishOpts, function (progress) {
+            } 
+                oPublishToFacebook.beginPublish(oPublishOpts, (progress) => {
                     oStatus.bulletin.facebook = progress;
-                }).then(function () {
+                }).then(() => {
                     console.log("Publish to facebook done");
-                }, function (e) {
+                }, (e) => {
                     console.log("Publish to facebook error");
                     console.log(e);
                 });
@@ -524,7 +414,7 @@ var appRouter = function (app) {
                     status: "progress", // caller must check the status
                     message: "Bulletin is being published on facebook"
                 };
-            }
+            
         }
     }
 };
