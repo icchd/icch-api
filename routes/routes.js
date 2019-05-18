@@ -6,7 +6,7 @@ var oScheduleChecker = require("../scheduleChecker");
 var Request = require("request");
 
 // -- github operations
-const oGithubApi = require("./lib/githubApi.js");
+const oGithubApi = require("../lib/githubApi");
 
 const DEFAULT_MIN_FACEBOOK_REPUBLISH_SECS = 900000;
 
