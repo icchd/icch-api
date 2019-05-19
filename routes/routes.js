@@ -58,7 +58,7 @@ var appRouter = function (app) {
         committerName: oEnv.GITHUB_COMMITTER_NAME,
         committerEmail: oEnv.GITHUB_COMMITTER_EMAIL,
         apiBasicAuth: oEnv.GITHUB_API_BASIC_AUTH,
-        isDryRun: Boolean(oEnv.DRY_RUN)
+        isDryRun: oEnv.DRY_RUN === "true"
     };
     var newGithubFile = oGithubApi.newGithubFile.bind(null, oGithubApiOptions);
     var getGithubFile = oGithubApi.getGithubFile.bind(null, oGithubApiOptions);
