@@ -88,7 +88,7 @@
         "guard-for-in": "error",
         "handle-callback-err": "error",
         "id-blacklist": "error",
-        "id-length": "error",
+        "id-length": "off",
         "id-match": "error",
         "implicit-arrow-linebreak": "error",
         "indent": "off",
@@ -295,7 +295,7 @@
             "never"
         ],
         "valid-jsdoc": "off",
-        "vars-on-top": "error",
+        "vars-on-top": "off",
         "wrap-iife": "error",
         "wrap-regex": "error",
         "yield-star-spacing": "error",

@@ -62,6 +62,7 @@ var appRouter = function (app) {
     };
     var newGithubFile = oGithubApi.newGithubFile.bind(null, oGithubApiOptions);
     var getGithubFile = oGithubApi.getGithubFile.bind(null, oGithubApiOptions);
+    var triggerGithubPagesBuild = oGithubApi.triggerGithubPagesBuild.bind(null, oGithubApiOptions);
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({
@@ -348,12 +349,16 @@ var appRouter = function (app) {
             });
         });
 
-        oCanPublishToFacebookPromise.then(() => publishToFacebook(oData)).then((oResult) => {
-            var oResponse = {};
-            oResponse.success = oResult.status !== "error";
-            oResponse.message = oResult.message;
-            oResponse.path = "/" + oData.saveAs;
-        });
+        var sGithubPagesPathBase = "/repos/icchd/icchd.github.io";
+        oCanPublishToFacebookPromise
+            .then(() => triggerGithubPagesBuild(sGithubPagesPathBase))
+            .then(() => publishToFacebook(oData))
+            .then((oResult) => {
+                var oResponse = {};
+                oResponse.success = oResult.status !== "error";
+                oResponse.message = oResult.message;
+                oResponse.path = "/" + oData.saveAs;
+            });
     });
 
     function publishToFacebook(oData) {
@@ -400,7 +405,7 @@ var appRouter = function (app) {
                     status: "success", // caller must check the status
                     message: "Process is taking care of publishing"
                 };
-            } 
+            }
                 oPublishToFacebook.beginPublish(oPublishOpts, (progress) => {
                     oStatus.bulletin.facebook = progress;
                 }).then(() => {
@@ -414,7 +419,7 @@ var appRouter = function (app) {
                     status: "progress", // caller must check the status
                     message: "Bulletin is being published on facebook"
                 };
-            
+
         }
     }
 };
