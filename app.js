@@ -4,9 +4,9 @@ var compression = require("compression");
 var app = express();
 
 (async () => {
-    const downloader = require("./download-puppeteer");
-    await downloader.download();
-    console.log("Post-puppeteer");
+    // const downloader = require("./download-puppeteer");
+    // await downloader.download();
+    // console.log("Post-puppeteer");
 
     app.use(compression());
     app.use(bodyParser.json());
