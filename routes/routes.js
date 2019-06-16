@@ -33,7 +33,8 @@ function getEnv() {
         "GITHUB_COMMITTER_NAME",
         "GITHUB_COMMITTER_EMAIL",
         "BULLETIN_FORK_FACEBOOK_PUBLISH",
-        "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD"
+        "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD",
+        "PUPPETEER_EXECUTABLE_PATH"
     ].forEach((sVar) => {
         if (process.env[sVar]) {
             oEnv[sVar] = process.env[sVar];
