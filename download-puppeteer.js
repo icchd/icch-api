@@ -1,5 +1,6 @@
 const {resolve} = require("path");
 const TARGET_DOWNLOAD_DIR = "/tmp";
+const { spawn } = require('child_process');
 
 async function setupPuppeteer () {
     var sDownloadPath = resolve(TARGET_DOWNLOAD_DIR);
@@ -13,35 +14,41 @@ async function setupPuppeteer () {
     return revisionInfo;
 }
 
+async function runCommand (sCommand, aArgs) {
+    return new Promise ((fnResolve) => {
+        const cmd = spawn(sCommand, aArgs);
+        cmd.stdout.on("data", (data) => {
+          console.log(`[${sCommand} (ii)] ${data.toString()}`);
+        });
+        cmd.stderr.on("data", (data) => {
+          console.log(`[${sCommand} (ee)] ${data.toString()}`);
+        });
+        cmd.on("close", (code) => {
+          console.log(`[${sCommand}] exited with status code ${code}`);
+          fnResolve();
+        });
+    });
+}
+
 async function download () {
     const puppeteerRevisionInfo = await setupPuppeteer();
 
-    console.log("listing " + TARGET_DOWNLOAD_DIR);
     const testFolder = TARGET_DOWNLOAD_DIR;
     const fs = require('fs');
     fs.readdir(testFolder, (err, files) => {
+      console.log("listing " + TARGET_DOWNLOAD_DIR);
       files.forEach(file => {
         console.log(file);
       });
-    });
-    console.log("end of dir content.");
-
-    console.log("Running command");
-    const { spawn } = require('child_process');
-    const cmd = spawn(puppeteerRevisionInfo.executablePath, ["--version"]);
-    cmd.stdout.on("data", function(data) {
-      console.log("[ii]" + data.toString());
-    });
-    cmd.stderr.on("data", function(data) {
-      console.log("[ee]" + data.toString());
-    });
-    cmd.on("close", function(code) {
-      console.log(`[ii] child process exited with code ${code}`);
+      console.log("end of dir content.");
     });
 
     console.log("Puppeteer revision info:");
     console.log(puppeteerRevisionInfo);
     console.log("done");
+
+    await runCommand ("/usr/bin/ldd", [puppeteerRevisionInfo.executablePath]);
+    await runCommand ("/bin/ls", [puppeteerRevisionInfo.executablePath]);
 }
 
 module.exports = {
