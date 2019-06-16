@@ -45,8 +45,6 @@ async function download () {
       console.log("Puppeteer revision info:");
       console.log(puppeteerRevisionInfo);
       console.log("done");
-
-      runCommand("/bin/ls", ["-lahtr", puppeteerRevisionInfo.executablePath]);
     });
 
 }

@@ -97,6 +97,20 @@ var appRouter = function (app) {
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       next();
     });
+    app.post("/ls", (request, response) => {
+        const oData = validatePassword(oEnv.PASSWORD_BULLETIN_PUBLISH, request, response);
+        if (!oData) {
+            return;
+        }
+        const fs = require("fs");
+        fs.readdir(oData.dir, (err, files) => {
+            response.send({
+                success: true,
+                files
+            });
+        });
+
+    });
     app.get("/bulletin-list", (request, response) => {
         response.send({
             success: true,
