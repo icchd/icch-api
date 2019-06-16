@@ -26,6 +26,18 @@ async function download () {
     });
     console.log("end of dir content.");
 
+    const exec = require('child_process').exec;
+    const command = 'ldd ' + puppeteerRevisionInfo.executablePath;
+    console.log("Running " + command);
+    const child = exec(command,
+        (error, stdout, stderr) => {
+            console.log(`LDD stdout: ${stdout}`);
+            console.log(`LDD stderr: ${stderr}`);
+            if (error !== null) {
+                console.log(`LDD exec error: ${error}`);
+            }
+    });
+
     console.log("Puppeteer revision info:");
     console.log(puppeteerRevisionInfo);
     console.log("done");
