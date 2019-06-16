@@ -26,16 +26,17 @@ async function download () {
     });
     console.log("end of dir content.");
 
-    const exec = require('child_process').exec;
-    const command = 'ldd ' + puppeteerRevisionInfo.executablePath;
-    console.log("Running " + command);
-    const child = exec(command,
-        (error, stdout, stderr) => {
-            console.log(`LDD stdout: ${stdout}`);
-            console.log(`LDD stderr: ${stderr}`);
-            if (error !== null) {
-                console.log(`LDD exec error: ${error}`);
-            }
+    console.log("Running command");
+    const { spawn } = require('child_process');
+    const cmd = spawn(puppeteerRevisionInfo.executablePath, ["--version"]);
+    cmd.stdout.on("data", function(data) {
+      console.log("[ii]" + data.toString());
+    });
+    cmd.stderr.on("data", function(data) {
+      console.log("[ee]" + data.toString());
+    });
+    cmd.on("close", function(code) {
+      console.log(`[ii] child process exited with code ${code}`);
     });
 
     console.log("Puppeteer revision info:");
