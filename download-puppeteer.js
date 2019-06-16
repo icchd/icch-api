@@ -41,14 +41,14 @@ async function download () {
         console.log(file);
       });
       console.log("end of dir content.");
+
+      console.log("Puppeteer revision info:");
+      console.log(puppeteerRevisionInfo);
+      console.log("done");
+
+      runCommand("/bin/ls", ["-lahtr", puppeteerRevisionInfo.executablePath]);
     });
 
-    console.log("Puppeteer revision info:");
-    console.log(puppeteerRevisionInfo);
-    console.log("done");
-
-    await runCommand ("/usr/bin/ldd", [puppeteerRevisionInfo.executablePath]);
-    await runCommand ("/bin/ls", [puppeteerRevisionInfo.executablePath]);
 }
 
 module.exports = {
