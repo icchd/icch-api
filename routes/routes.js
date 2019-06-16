@@ -130,11 +130,14 @@ var appRouter = function (app) {
             }
 
             try {
+                console.log("Creating PDF");
                 const sUrl = oData.url;
                 const oPdfBuffer = await fnCreatePdfBuffer(sUrl);
 
+                console.log("Sendin binary buffer");
                 sendBuffer(oPdfBuffer, "bulletin.pdf", "application/pdf", response);
             } catch (sError) {
+                console.log("Error while creating PDF", sError.stack);
                 response.send({
                     success: false,
                     error: sError
