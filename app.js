@@ -3,6 +3,8 @@ var bodyParser = require("body-parser");
 var compression = require("compression");
 var app = express();
 
+require("./download-puppeteer").download();
+
 app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
