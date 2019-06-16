@@ -137,7 +137,8 @@ var appRouter = function (app) {
                 console.log("Sendin binary buffer");
                 sendBuffer(oPdfBuffer, "bulletin.pdf", "application/pdf", response);
             } catch (sError) {
-                console.log("Error while creating PDF", sError.stack);
+                console.log("Error while creating PDF (error):", sError);
+                console.log("Error while creating PDF (stack):\n", sError.stack);
                 response.send({
                     success: false,
                     error: sError
