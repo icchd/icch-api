@@ -23,14 +23,14 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "retry": "^0.10.1",
-    "urijs": "^1.19.1"
+    "urijs": "^1.19.1",
+    "puppeteer": "^1.17.0"
   },
   "engines": {
     "node": ">=8.4.0"
   },
   "devDependencies": {
     "eslint": "^5.16.0",
-    "mocha": "^6.0.2",
-    "puppeteer": "^1.17.0"
+    "mocha": "^6.0.2"
   }
 }
