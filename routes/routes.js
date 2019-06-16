@@ -4,6 +4,7 @@ var oPublishToFacebook = require("../publishToFacebook");
 var suggest = require("../suggest");
 var oScheduleChecker = require("../scheduleChecker");
 var Request = require("request");
+var oPdfCreator = require("../lib/pdfCreator");
 
 // -- github operations
 const oGithubApi = require("../lib/githubApi");
@@ -31,7 +32,8 @@ function getEnv() {
         "DRY_RUN",
         "GITHUB_COMMITTER_NAME",
         "GITHUB_COMMITTER_EMAIL",
-        "BULLETIN_FORK_FACEBOOK_PUBLISH"
+        "BULLETIN_FORK_FACEBOOK_PUBLISH",
+        "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD"
     ].forEach((sVar) => {
         if (process.env[sVar]) {
             oEnv[sVar] = process.env[sVar];
@@ -43,6 +45,24 @@ function getEnv() {
     }
 
     return oEnv;
+}
+
+function validatePassword (sCorrectPassword, request, response) {
+    var oData = request.body;
+
+    if (oData.password !== sCorrectPassword) {
+        response.send({
+            success: false,
+            message: "Invalid password"
+        });
+        return;
+    }
+
+    /* eslint-disable prefer-reflect*/
+    delete oData.password; /* Important */
+    /* eslint-enable */
+
+    return oData;
 }
 
 
@@ -63,6 +83,8 @@ var appRouter = function (app) {
     var newGithubFile = oGithubApi.newGithubFile.bind(null, oGithubApiOptions);
     var getGithubFile = oGithubApi.getGithubFile.bind(null, oGithubApiOptions);
     var triggerGithubPagesBuild = oGithubApi.triggerGithubPagesBuild.bind(null, oGithubApiOptions);
+
+    var fnCreatePdfBuffer = oPdfCreator.createBuffer.bind(null, oEnv);
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({
@@ -90,21 +112,36 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
-    app.get("/pdf", (request, response) => {
-        const puppeteer = require("puppeteer");
+    app.post("/pdf", (request, response) => {
+        function sendBuffer (data, filename, mimetype, res) {
+            res.writeHead(200, {
+                'Content-Type': mimetype,
+                'Content-disposition': 'attachment;filename=' + filename,
+                'Content-Length': data.length
+            });
+            res.end(Buffer.from(data, "binary"));
+        }
 
         (async () => {
-          const browser = await puppeteer.launch();
-          const page = await browser.newPage();
-          await page.goto("https://news.ycombinator.com", {waitUntil: "networkidle2"});
-          await page.pdf({path: "output.pdf", format: "A4"});
 
-          await browser.close();
+            const oData = validatePassword(oEnv.PASSWORD_BULLETIN_PUBLISH, request, response);
+            if (!oData) {
+                return;
+            }
 
-          response.send({
-              generate: true
-          });
+            try {
+                const sUrl = oData.url;
+                const oPdfBuffer = await fnCreatePdfBuffer(sUrl);
+
+                sendBuffer(oPdfBuffer, "bulletin.pdf", "application/pdf", response);
+            } catch (sError) {
+                response.send({
+                    success: false,
+                    error: sError
+                });
+            }
         })();
+
     });
 
     app.get("/abortFacebookPublish", (request, response) => {
@@ -143,7 +180,7 @@ var appRouter = function (app) {
                 wholeDataRange: "A1:H50"
             },
             fieldNames: ["set-up", "pick-up", "priest", "lector", "em"]
-        }).then((oStatus) => {
+        }).then((/* oStatus */) => {
             response.send({
                 success: true
             });
@@ -174,13 +211,8 @@ var appRouter = function (app) {
     });
 
     app.post("/songs", (request, response) => {
-        var oData = request.body;
-
-        if (oData.password !== oEnv.PASSWORD_SONG_PUBLISH) {
-            response.send({
-                success: false,
-                message: "Invalid password"
-            });
+        var oData = validatePassword(oEnv.PASSWORD_SONG_PUBLISH, request, response);
+        if (!oData) {
             return;
         }
 
@@ -195,7 +227,7 @@ var appRouter = function (app) {
             }, (error) => {
                 response.send({
                     success: false,
-                    message: "Invalid password"
+                    message: "Cannot get suggestions"
                 });
             });
 
@@ -205,7 +237,6 @@ var appRouter = function (app) {
         if (oData.type === "save") {
             var sJsonFileName = oData.saveAs;
 
-            delete oData.password; /* Important */
             delete oData.saveAs;
             delete oData.type;
 
@@ -236,7 +267,6 @@ var appRouter = function (app) {
 
         if (oData.type === "saveNewSong") {
 
-            delete oData.password; /* Important */
             delete oData.type;
 
             var sGithubPath = [
@@ -280,17 +310,7 @@ var appRouter = function (app) {
         });
     });
     app.post("/bulletin", (request, response) => {
-        var oData = request.body;
-
-        if (oData.password !== oEnv.PASSWORD_BULLETIN_PUBLISH) {
-            response.send({
-                success: false,
-                message: "Invalid password"
-            });
-            return;
-        }
-
-        delete oData.password; /* Important */
+        var oData = validatePassword(oEnv.PASSWORD_BULLETIN_PUBLISH, request, response);
 
         var sBullettinSource = JSON.stringify(oData, null, 3);
 
