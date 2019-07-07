@@ -9,12 +9,14 @@ function m (sDateDDMMYYYY) {
 
 describe("parseRows", () => {
 
-    test("can parse two separate records", [
+    test("can parse separate records", [
       { date: 'June 2', color: 'blue', number: '1' },
-      { date: 'May 6', color: 'red', number: '2' }
+      { date: 'May 6', color: 'red', number: '2' },
+      { date: 'Sep 1', color: 'green', number: '3' }
     ], [
       { date: m("02/06/2019"), color: ['blue'], number: ['1'] },
-      { date: m("06/05/2019"), color: ['red'], number: ['2'] }
+      { date: m("06/05/2019"), color: ['red'], number: ['2'] },
+      { date: m("01/09/2019"), color: ['green'], number: ['3'] }
     ]);
 
     test("can merge the next record correctly", [
@@ -66,10 +68,10 @@ describe("parseRows", () => {
                 var oExpected = aExpectedRows[iIdx];
 
                 Object.keys(oParsed).forEach((sFieldName) => {
-                    const sValue1 = oParsed[sFieldName].format 
+                    const sValue1 = oParsed[sFieldName].format
                         ? oParsed[sFieldName].format("DD/MM/YYYY")
                         : oParsed[sFieldName];
-                    const sValue2 = oExpected[sFieldName].format 
+                    const sValue2 = oExpected[sFieldName].format
                         ? oExpected[sFieldName].format("DD/MM/YYYY")
                         : oExpected[sFieldName];
 
