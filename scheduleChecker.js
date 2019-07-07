@@ -21,7 +21,7 @@ async function triggerWebhook (oConfig) {
         ranges: sRangesJSON
     });
 
-    const oNextSundayRecord = findNextSundayRecord(aSpreadsheetJSON);
+    const oNextSundayRecord = findRecordClosestToDay(moment(), aSpreadsheetJSON);
 
     validateSundayRecordFields(oNextSundayRecord, aFieldNames);
 
@@ -72,20 +72,37 @@ function getFieldsWithoutValue (oNextSundayRecord, aFieldNames) {
     return aFieldNames.filter((sKey) => !oNextSundayRecord[sKey] || oNextSundayRecord[sKey].length === 0);
 }
 
-function findNextSundayRecord (aSpreadsheetJSON) {
+function diffDays (oDay, oParsedDateRow) {
+    const sDaysDiff = moment.duration(oParsedDateRow.date.diff(oDay)).as("days");
+
+    return {
+        diff: sDaysDiff,
+        record: oParsedDateRow
+    };
+}
+
+function sortOnField (sFieldName, a, b) {
+    if (a[sFieldName] < b[sFieldName]) {
+        return -1;
+    }
+    if (a[sFieldName] > b[sFieldName]) {
+        return 1;
+    }
+    return 0;
+}
+
+function findRecordClosestToDay (oTargetDay, aSpreadsheetJSON) {
     const aRows = parseRows(aSpreadsheetJSON, "date");
-
-    const oNextSunday = moment().weekday(7);
-
-    const [oNextSundayRecord] = aRows.filter(hasDate.bind(null, oNextSunday));
-    if (!oNextSundayRecord) {
-        const aAvailableDates = aRows.map((oDate) => oDate.date).map((oDate) => oDate.format("DD.MM"));
-        throw new Error(`Cannot find ${oNextSunday.format("DD.MM")} in the spreadsheet. Available dates are: ${aAvailableDates.join(", ")}`);
+    const aRowsDistance = aRows.map(diffDays.bind(null, oTargetDay)).sort(sortOnField.bind('diff'));
+    if (aRowsDistance.length === 0) {
+        throw new Error(`There are no rows in the spreadsheet`);
     }
 
-    console.log("Found record:", oNextSundayRecord);
+    const oNextRecord = aRowsDistance[0].record;
 
-    return oNextSundayRecord;
+    console.log("Found record:", oNextRecord);
+
+    return oNextRecord;
 }
 
 async function readSpreadsheetAsJson (sSpreadsheetId, oConfig) {
@@ -96,22 +113,42 @@ async function readSpreadsheetAsJson (sSpreadsheetId, oConfig) {
 
     const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
 
+    const oToday = moment();
     const oNextSunday = moment().weekday(7);
 
-    const sQuarter = getDateQuarter(oNextSunday, oRangesConfig.quartersInSpreadsheet);
+    const sQuarterToday = getDateQuarter(oToday, oRangesConfig.quartersInSpreadsheet);
+    const sQuarterNextSunday = getDateQuarter(oNextSunday, oRangesConfig.quartersInSpreadsheet);
 
-    console.log(`Got quarter ${sQuarter} for ${oNextSunday.format("DD/MM/YYYY")}`);
+    console.log(`Got today's quarter ${sQuarterToday} for ${oToday.format("DD/MM/YYYY")}`);
+    console.log(`Got next Sunday's quarter ${sQuarterNextSunday} for ${oNextSunday.format("DD/MM/YYYY")}`);
 
     const sWholeSpreadsheetRange = oRangesConfig.wholeDataRange;
 
-    const aSpreadsheetJSON = await fnGetGoogleSpreadsheetAsJSON(
+    const aSpreadsheetJSONCurrentQuarter = await fnGetGoogleSpreadsheetAsJSON(
         oAuthorizationToken,
         sSpreadsheetId,
-        `${sQuarter}!${sWholeSpreadsheetRange}`,
+        `${sQuarterToday}!${sWholeSpreadsheetRange}`,
         {
             headerRow: 1
         }
     );
+
+    let aSpreadsheetJSON = aSpreadsheetJSONCurrentQuarter;
+
+    if (sQuarterToday !== sQuarterNextSunday) {
+
+        const aSpreadsheetJSONNextQuarter = await fnGetGoogleSpreadsheetAsJSON(
+            oAuthorizationToken,
+            sSpreadsheetId,
+            `${sQuarterNextSunday}!${sWholeSpreadsheetRange}`,
+            {
+                headerRow: 1
+            }
+        );
+
+        aSpreadsheetJSON = aSpreadsheetJSONCurrentQuarter.concat(aSpreadsheetJSONNextQuarter);
+
+    }
 
     // first row below header is always empty
     aSpreadsheetJSON.shift();
@@ -265,7 +302,8 @@ ${formatLectors(oNextSundayRecord.lector)}
 function getFunctionForTest (sFunctionName) {
     const oAvailableFunctions = {
         validateSundayRecordFields,
-        parseRows
+        parseRows,
+        diffDays
     };
 
     return oAvailableFunctions[sFunctionName];

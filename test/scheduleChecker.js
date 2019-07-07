@@ -7,6 +7,41 @@ function m (sDateDDMMYYYY) {
     return moment(sDateDDMMYYYY, "DD/MM/YYYY");
 }
 
+describe("diffDays", () => {
+
+    let oRecord = null
+    test("can diff a day with a parsed record",
+      m("01/09/2019"),
+      oRecord = {
+          date: m("10/09/2019"),
+          color: ['blue'],
+          number: ['1']
+      },
+      {
+          diff: 9,
+          record: oRecord
+      }
+    );
+    test("can diff same day",
+      m("10/09/2019"),
+      oRecord = {
+          date: m("10/09/2019"),
+          color: ['blue'],
+          number: ['1']
+      },
+      {
+          diff: 0,
+          record: oRecord
+      }
+    );
+
+    function test (sTestDescription, oTargetDay, oParsedRecord, oExpectedDiff) {
+        const fn = oScheduleChecker.getFunctionForTest("diffDays");
+        const oResult = fn(oTargetDay, oParsedRecord);
+        assert.deepEqual(oResult, oExpectedDiff);
+    }
+});
+
 describe("parseRows", () => {
 
     test("can parse separate records", [
