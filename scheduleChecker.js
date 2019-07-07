@@ -28,9 +28,9 @@ async function triggerWebhook (oConfig) {
     validateSundayRecordFields(oClosestRecord, aFieldNames);
 
     const sEmailBody = prepareEmailBodyHTML(oClosestRecord);
-    const sEmailSubjectDate = oClosestRecord.format("ll");
+    const sEmailSubjectDate = oClosestRecord.date.format("ll");
     const bIsSocialGathering = oClosestRecord.activities.join(" ").toLowerCase().indexOf("social") >= 0;
-    const sDayName = oClosestRecord.format('dddd');
+    const sDayName = oClosestRecord.date.format('dddd');
 
     const oWebhooksPostParams = {
         "value1": sEmailBody,
