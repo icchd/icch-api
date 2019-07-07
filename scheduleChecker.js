@@ -22,7 +22,8 @@ async function triggerWebhook (oConfig) {
     });
 
     const aRows = parseRows(aSpreadsheetJSON, "date");
-    const oClosestRecord = findClosestRecord(moment(), aRows);
+    const oTodayRounded = moment(moment().format("YYYY/MM/DD"));
+    const oClosestRecord = findClosestRecord(oTodayRounded, aRows);
 
     validateSundayRecordFields(oClosestRecord, aFieldNames);
 
@@ -94,13 +95,9 @@ function sortOnField (sFieldName, a, b) {
 }
 
 function findClosestRecord (oTargetDay, aRows) {
-    let aRowsDistance = aRows
+    const aRowsDistance = aRows
         .map(diffDays.bind(null, oTargetDay))
-        .sort(sortOnField.bind(null, 'diff'));
-
-    console.log(aRowsDistance);
-
-    aRowsDistance = aRowsDistance
+        .sort(sortOnField.bind(null, 'diff'))
         .filter((oDiff) => oDiff.diff >= 0);
 
     if (aRowsDistance.length === 0) {
