@@ -10,7 +10,7 @@ function m (sDateDDMMYYYY) {
 describe("findClosestRecord", () => {
 
     let oClosestRecord = null;
-    test("can find closest record",
+    test("can find closest non-negative record",
       m("10/09/2019"),
       [
           {
@@ -24,6 +24,33 @@ describe("findClosestRecord", () => {
               number: ['1']
           },
           oClosestRecord = {
+              date: m("13/09/2019"),
+              color: ['red'],
+              number: ['1']
+          },
+      ],
+      oClosestRecord
+    );
+
+    test("the closest record is the same date if this appears in the list",
+      m("10/09/2019"),
+      [
+          {
+              date: m("15/09/2019"),
+              color: ['blue'],
+              number: ['1']
+          },
+          {
+              date: m("09/09/2019"),
+              color: ['green'],
+              number: ['1']
+          },
+          oClosestRecord = {
+              date: m("10/09/2019"),
+              color: ['brown'],
+              number: ['1']
+          },
+          {
               date: m("13/09/2019"),
               color: ['red'],
               number: ['1']

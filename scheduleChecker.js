@@ -22,17 +22,18 @@ async function triggerWebhook (oConfig) {
     });
 
     const aRows = parseRows(aSpreadsheetJSON, "date");
-    const oNextSundayRecord = findClosestRecord(moment(), aRows);
+    const oClosestRecord = findClosestRecord(moment(), aRows);
 
-    validateSundayRecordFields(oNextSundayRecord, aFieldNames);
+    validateSundayRecordFields(oClosestRecord, aFieldNames);
 
-    const sEmailBody = prepareEmailBodyHTML(oNextSundayRecord);
-    const sEmailSubjectDate = moment().weekday(7).format("ll");
-    const bIsSocialGathering = oNextSundayRecord.activities.join(" ").toLowerCase().indexOf("social") >= 0;
+    const sEmailBody = prepareEmailBodyHTML(oClosestRecord);
+    const sEmailSubjectDate = oClosestRecord.format("ll");
+    const bIsSocialGathering = oClosestRecord.activities.join(" ").toLowerCase().indexOf("social") >= 0;
+    const sDayName = oClosestRecord.format('dddd');
 
     const oWebhooksPostParams = {
         "value1": sEmailBody,
-        "value2": `Sunday ${sEmailSubjectDate}`,
+        "value2": `${sDayName} ${sEmailSubjectDate}`,
         "value3": bIsSocialGathering ? "(social gathering)" : ""
     };
 
@@ -93,9 +94,13 @@ function sortOnField (sFieldName, a, b) {
 }
 
 function findClosestRecord (oTargetDay, aRows) {
-    const aRowsDistance = aRows
+    let aRowsDistance = aRows
         .map(diffDays.bind(null, oTargetDay))
-        .sort(sortOnField.bind(null, 'diff'))
+        .sort(sortOnField.bind(null, 'diff'));
+
+    console.log(aRowsDistance);
+
+    aRowsDistance = aRowsDistance
         .filter((oDiff) => oDiff.diff >= 0);
 
     if (aRowsDistance.length === 0) {
