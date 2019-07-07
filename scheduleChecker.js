@@ -21,7 +21,8 @@ async function triggerWebhook (oConfig) {
         ranges: sRangesJSON
     });
 
-    const oNextSundayRecord = findRecordClosestToDay(moment(), aSpreadsheetJSON);
+    const aRows = parseRows(aSpreadsheetJSON, "date");
+    const oNextSundayRecord = findClosestRecord(moment(), aRows);
 
     validateSundayRecordFields(oNextSundayRecord, aFieldNames);
 
@@ -91,9 +92,12 @@ function sortOnField (sFieldName, a, b) {
     return 0;
 }
 
-function findRecordClosestToDay (oTargetDay, aSpreadsheetJSON) {
-    const aRows = parseRows(aSpreadsheetJSON, "date");
-    const aRowsDistance = aRows.map(diffDays.bind(null, oTargetDay)).sort(sortOnField.bind('diff'));
+function findClosestRecord (oTargetDay, aRows) {
+    const aRowsDistance = aRows
+        .map(diffDays.bind(null, oTargetDay))
+        .sort(sortOnField.bind(null, 'diff'))
+        .filter((oDiff) => oDiff.diff >= 0);
+
     if (aRowsDistance.length === 0) {
         throw new Error(`There are no rows in the spreadsheet`);
     }
@@ -169,8 +173,6 @@ function parseRows (aRows, sLeadingFieldName) {
             return aRows;
         }
 
-        const sLeadingFieldValue = oNextRow[sLeadingFieldName];
-
         if (oNextRow[sLeadingFieldName]) {
             const oNewRecord = createNewRecord(oNextRow);
             aRows.push(oNewRecord);
@@ -220,10 +222,6 @@ function updateFields (aRows, sFieldId, fnUpdate) {
     aRows.forEach((oRow) => {
         oRow[sFieldId] = fnUpdate(oRow[sFieldId]);
     });
-}
-
-function hasDate (oDesiredDay, oRow) {
-    return oRow.date.isSame(oDesiredDay, "day");
 }
 
 function getDateQuarter (oDate, aPossibleQuarters) {
@@ -277,8 +275,8 @@ function prepareEmailBodyHTML (oNextSundayRecord) {
             case 1:
                 return `<b>1st and 2nd Reading</b> &rarr; ${aLectorsRecord[0]}<br />`;
             case 2:
-                return `<b>1st Reading</b> &rarr; ${aLectorsRecord[0]}<br />`
-                    + `<b>2nd Reading</b> &rarr; ${aLectorsRecord[1]}<br />`;
+                return `<b>1st Reading</b> &rarr; ${aLectorsRecord[0]}<br />` +
+                    `<b>2nd Reading</b> &rarr; ${aLectorsRecord[1]}<br />`;
             default:
                 return aLectorsRecord.map((sName, iIdx) => `<b>Reading ${iIdx + 1}</b> &rarr; ${sName}<br />`).join("");
         }
@@ -303,7 +301,8 @@ function getFunctionForTest (sFunctionName) {
     const oAvailableFunctions = {
         validateSundayRecordFields,
         parseRows,
-        diffDays
+        diffDays,
+        findClosestRecord
     };
 
     return oAvailableFunctions[sFunctionName];

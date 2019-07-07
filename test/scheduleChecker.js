@@ -7,9 +7,42 @@ function m (sDateDDMMYYYY) {
     return moment(sDateDDMMYYYY, "DD/MM/YYYY");
 }
 
+describe("findClosestRecord", () => {
+
+    let oClosestRecord = null;
+    test("can find closest record",
+      m("10/09/2019"),
+      [
+          {
+              date: m("15/09/2019"),
+              color: ['blue'],
+              number: ['1']
+          },
+          {
+              date: m("09/09/2019"),
+              color: ['green'],
+              number: ['1']
+          },
+          oClosestRecord = {
+              date: m("13/09/2019"),
+              color: ['red'],
+              number: ['1']
+          },
+      ],
+      oClosestRecord
+    );
+
+    function test (sTestDescription, oTargetDay, aRecords, oExpectedRecord) {
+        const fn = oScheduleChecker.getFunctionForTest("findClosestRecord");
+        const oResult = fn(oTargetDay, aRecords);
+        assert.deepEqual(oResult, oExpectedRecord);
+    }
+});
+
+
 describe("diffDays", () => {
 
-    let oRecord = null
+    let oRecord = null;
     test("can diff a day with a parsed record",
       m("01/09/2019"),
       oRecord = {
