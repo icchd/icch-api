@@ -143,12 +143,14 @@ describe("parseRows", () => {
       { date: '', color: '', number: '2' },
       { date: '', color: '', number: '3' },
       { date: 'April 28', color: '', number: '64' },
-      { date: 'June 9 - Pentecost', color: 'green', number: '128' }
+      { date: 'June 9 - Pentecost', color: 'green', number: '128' },
+      { date: 'Dec 1 - First of Advent', color: 'brown', number: '000' }
     ], [
       { date: m("02/06/2019"), color: ['blue', 'red', 'orange', 'green'], number: ['1', '2', '3'] },
       { date: m("06/05/2019"), color: [], number: ['1', '2', '3'] },
       { date: m("28/04/2019"), color: [], number: ['64'] },
-      { date: m("09/06/2019"), color: ['green'], number: ['128'] }
+      { date: m("09/06/2019"), color: ['green'], number: ['128'] },
+      { date: m("01/12/2019"), color: ['brown'], number: ['000'] },
     ]);
 
     function test (sTestDescription, aRows, aExpectedRows) {
@@ -172,7 +174,7 @@ describe("parseRows", () => {
 
                     assert.deepEqual(sValue1, sValue2);
                 });
-            })
+            });
         });
     }
 });
