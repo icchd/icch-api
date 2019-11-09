@@ -286,9 +286,11 @@ function prepareEmailBodyHTML (oNextSundayRecord) {
 
     return `<br />
 <b>Priest</b> &rarr; ${oNextSundayRecord.priest.join(", ")}<br />
-<br />
-<b>Priest pick-up</b> &rarr; ${formatPickup(oNextSundayRecord["pick-up"])}<br />
-<br />
+<br />`
++ (oNextSundayRecord["pick-up"]
+        ? `<b>Priest pick-up</b> &rarr; ${formatPickup(oNextSundayRecord["pick-up"])}<br /><br />`
+        : "")
++ `
 <b>Mass Set-up</b> &rarr; ${oNextSundayRecord["set-up"].join(", ")}<br />
 <br />
 <b>Lectors:</b><br />

@@ -19,6 +19,7 @@ function getEnv() {
         "FACEBOOK_PERMANENT_ACCESS_TOKEN",
         "SUNDAY_SCHEDULE_COMPLETED_WEBHOOK_URL",
         "SUNDAY_SCHEDULE_ERROR_WEBHOOK_URL",
+        "SUNDAY_SCHEDULE_MOMENTS",
         "GOOGLE_SHEETS_SPREADSHEET_ID",
         "GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON",
         "GOOGLE_SHEETS_CREDENTIALS_JSON",
@@ -198,7 +199,7 @@ var appRouter = function (app) {
                 ],
                 wholeDataRange: "A1:H50"
             },
-            fieldNames: ["set-up", "pick-up", "priest", "lector", "em"]
+            fieldNames: (oEnv.SUNDAY_SCHEDULE_MOMENTS || "set-up,pick-up,priest,lector,em").split(",")
         }).then((/* oStatus */) => {
             response.send({
                 success: true
