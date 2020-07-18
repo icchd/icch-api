@@ -24,7 +24,7 @@ async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
         }
     );
 
-    return Reflect.apply(Math.max, null, aSpreadsheetValues.map((o) => o.maxnumber));
+    return Reflect.apply(Math.min, null, aSpreadsheetValues.map((o) => o.maxnumber));
 }
 
 async function registerName (oEnv, sName, sNumberOfPeople) {
@@ -54,12 +54,13 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
         Request.post("https://maker.ifttt.com/trigger/registerIcchAttendance/with/key/fiWhzPuGKRLEeVXuLflW9", {
             json: oRegistrationPayload
         }, (error, response, body) => {
-            if (!error && response.statusCode === 201) {
+            if (error) {
+                console.log("Failed to call API: " + error + " status was " + response.statusCode);
+                fnResolve("An error occurred while registering your name");
+            } else {
                 console.log("Got successful response  " + body);
                 fnResolve(null);
             }
-            console.log("Failed to call API: " + error + " status was " + response.statusCode);
-            fnResolve("An error occurred while registering your name");
         });
     });
 }
