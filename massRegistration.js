@@ -5,7 +5,7 @@ function validateInput (sName, sNumberOfPeople) {
     if (typeof sName !== "string" || sName.length === 0) {
         return "Empty name was provided. Please enter a name and try again";
     }
-    if (typeof sNumberOfPeople !== "string" || (/[1-9][0-9]?/u).test(sNumberOfPeople)) {
+    if (typeof sNumberOfPeople !== "string" || !(/[1-9]0?/u).test(sNumberOfPeople)) {
         return "Invalid number was provided. Please enter a valid number and try again";
     }
     return null;
@@ -19,7 +19,7 @@ async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
         sSpreadsheetId,
         `covid!A1:A99999`,
         {
-            headerRow: 0
+            headerRow: 1
         }
     );
 
