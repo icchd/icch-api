@@ -1,6 +1,7 @@
 const fnGetGoogleSpreadsheetAsJSON = require("./lib/spreadsheetReader");
 const GoogleAuth = require("./lib/googleAuth");
 const Request = require("request");
+const moment = require("moment");
 
 function validateInput (sName, sNumberOfPeople) {
     if (typeof sName !== "string" || sName.length === 0) {
@@ -39,16 +40,16 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
         return "Registration error. Please try again later.";
     }
     if (iAvailablePlaces < iNumberOfPeople) {
-        return "Sorry, only " + iAvailablePlaces + " are available, so we cannot register " + iNumberOfPeople + " people.";
+        return "Sorry, only " + iAvailablePlaces + " places are available, so we cannot register " + iNumberOfPeople + " people.";
     }
 
-    // proceed with registration: trigger webhook
-
     return new Promise((fnResolve) => {
+        const oNextSunday = moment().weekday(7);
+
         var oRegistrationPayload = {
-            value1: "128",
-            value2: "Name",
-            value3: "SundayDate"
+            value1: sNumberOfPeople,
+            value2: sName,
+            value3: oNextSunday.format("ll")
         };
 
         Request.post("https://maker.ifttt.com/trigger/registerIcchAttendance/with/key/fiWhzPuGKRLEeVXuLflW9", {
