@@ -1,5 +1,6 @@
 const fnGetGoogleSpreadsheetAsJSON = require("./lib/spreadsheetReader");
 const GoogleAuth = require("./lib/googleAuth");
+const Request = require("request");
 
 function validateInput (sName, sNumberOfPeople) {
     if (typeof sName !== "string" || sName.length === 0) {
@@ -23,9 +24,7 @@ async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
         }
     );
 
-    console.log(aSpreadsheetValues);
-
-    return 10;
+    return Reflect.apply(Math.max, null, aSpreadsheetValues.map((o) => o.maxnumber));
 }
 
 async function registerName (oEnv, sName, sNumberOfPeople) {
@@ -44,6 +43,21 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     }
 
     // proceed with registration: trigger webhook
+    var oRegistrationPayload = {
+        value1: "128",
+        value2: "Name",
+        value3: "SundayDate"
+    };
+
+    Request.post({
+        url: "https://maker.ifttt.com/trigger/registerIcchAttendance/with/key/fiWhzPuGKRLEeVXuLflW9",
+        body: oRegistrationPayload
+    }, (error, response, body) => {
+        if (!error && response.statusCode === 201) {
+            console.log("Got successful response  " + body);
+        }
+        console.log("Failed to call API: " + error + " status was " + response.statusCode);
+    });
 
     return null;
 }
