@@ -171,6 +171,16 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
+    app.post("/mass-registration", (request, response) => {
+        var oData = request.body;
+        var sName = oData.name;
+        var sNumberOfPeople = oData.number;
+
+        response.send({
+            success: true
+        });
+    });
+
     app.post("/icch-schedule-check", (request, response) => {
         var oData = request.body;
         if (oData.password !== oEnv.PASSWORD_AUTOMATIC_EMAILS) {
