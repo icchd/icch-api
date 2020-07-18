@@ -3,6 +3,7 @@ var child_process = require("child_process");
 var oPublishToFacebook = require("../publishToFacebook");
 var suggest = require("../suggest");
 var oScheduleChecker = require("../scheduleChecker");
+var oMassRegistration = require("../massRegistration");
 var Request = require("request");
 var oPdfCreator = require("../lib/pdfCreator");
 
@@ -171,10 +172,28 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
-    app.post("/mass-registration", (request, response) => {
+    app.post("/mass-registration", async (request, response) => {
         var oData = request.body;
         var sName = oData.name;
         var sNumberOfPeople = oData.number;
+
+        var sErrorMessage = oMassRegistration.validateInput(sName, sNumberOfPeople);
+        if (sErrorMessage) {
+            response.send({
+                success: false,
+                message: sErrorMessage
+            });
+            return;
+        }
+
+        var sRegistrationErrorMessage = await oMassRegistration.registerName(getEnv(), sName, sNumberOfPeople);
+        if (sRegistrationErrorMessage) {
+            response.send({
+                success: false,
+                message: sRegistrationErrorMessage
+            });
+            return;
+        }
 
         response.send({
             success: true
