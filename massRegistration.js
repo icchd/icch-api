@@ -43,23 +43,25 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     }
 
     // proceed with registration: trigger webhook
-    var oRegistrationPayload = {
-        value1: "128",
-        value2: "Name",
-        value3: "SundayDate"
-    };
 
-    Request.post({
-        url: "https://maker.ifttt.com/trigger/registerIcchAttendance/with/key/fiWhzPuGKRLEeVXuLflW9",
-        body: oRegistrationPayload
-    }, (error, response, body) => {
-        if (!error && response.statusCode === 201) {
-            console.log("Got successful response  " + body);
-        }
-        console.log("Failed to call API: " + error + " status was " + response.statusCode);
+    return new Promise((fnResolve) => {
+        var oRegistrationPayload = {
+            value1: "128",
+            value2: "Name",
+            value3: "SundayDate"
+        };
+
+        Request.post("https://maker.ifttt.com/trigger/registerIcchAttendance/with/key/fiWhzPuGKRLEeVXuLflW9", {
+            json: oRegistrationPayload
+        }, (error, response, body) => {
+            if (!error && response.statusCode === 201) {
+                console.log("Got successful response  " + body);
+                fnResolve(null);
+            }
+            console.log("Failed to call API: " + error + " status was " + response.statusCode);
+            fnResolve("An error occurred while registering your name");
+        });
     });
-
-    return null;
 }
 
 module.exports = {
