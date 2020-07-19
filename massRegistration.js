@@ -77,7 +77,7 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
                 console.log("Got successful response  " + body);
                 fnResolve({
                     success: true,
-                    message: "Thank you. See you on " + oNextSunday.format("ll") + " at mass! Do not forget to mention the name '" + sName + "' to our volunteers when arriving."
+                    message: "Thank you. See you at mass on " + oNextSunday.format("ll") + "! Do not forget to mention the name '" + sName + "' to our volunteers when arriving."
                 });
             }
         });
@@ -86,7 +86,8 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
 
 function getNextSunday() {
     let oNextSunday = moment().weekday(7);
-    if (moment().format('dddd') === "Sunday") {
+    console.log("Hour: " + moment().format("H"));
+    if (moment().format('dddd') === "Sunday" && parseInt(moment().format('H'), 10) <= 10) {
         oNextSunday = moment();
     }
     return oNextSunday;
