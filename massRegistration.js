@@ -12,6 +12,11 @@ function validateInput (sName, sNumberOfPeople) {
     if (typeof sName !== "string" || sName.length === 0) {
         return "Empty name was provided. Please enter a name and try again";
     }
+
+    if (!(/[\w -]+/u).test(sName)) {
+        return "You have provided an invalid name. You can use only letters and space or dash (\"-\") Characters.";
+    }
+
     if (typeof sNumberOfPeople !== "string" || !(/^[1-9]0?$/u).test(sNumberOfPeople)) {
         return "Invalid number was provided. Please enter a valid number and try again.";
     }
