@@ -60,7 +60,7 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     return new Promise((fnResolve) => {
         const oNextSunday = getNextSunday();
 
-        Request.post("https://maker.ifttt.com/trigger/registerIcchAttendance/with/key/fiWhzPuGKRLEeVXuLflW9", {
+        Request.post(oEnv.IFTTT_COVID_SEAT_WEBHOOK_URL, {
             json: {
                 value1: sNumberOfPeople,
                 value2: sName,
