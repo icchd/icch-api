@@ -12,19 +12,20 @@
   "author": "Savio Dimatteo",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.19.2",
     "body-parser": "^1.15.2",
     "cheerio": "^1.0.0-rc.2",
     "compression": "^1.7.0",
     "express": "^4.14.0",
     "fb": "^2.0.0",
     "get-json": "^1.0.1",
-    "googleapis": "^27.0.0",
+    "googleapis": "^55.0.0",
     "moment": "^2.24.0",
+    "puppeteer": "^1.17.0",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "retry": "^0.10.1",
-    "urijs": "^1.19.1",
-    "puppeteer": "^1.17.0"
+    "urijs": "^1.19.1"
   },
   "engines": {
     "node": ">=8.4.0"
