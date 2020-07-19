@@ -34,7 +34,7 @@ async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConf
     await SpreadsheetWriter.update(
         oAuthorizationToken,
         sSpreadsheetId,
-        `covid!A2`,
+        "covid!A2",
         {
             value: String(iNumber)
         }
@@ -43,14 +43,13 @@ async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConf
 
 async function registerName (oEnv, sName, sNumberOfPeople) {
     var iNumberOfPeople = parseInt(sNumberOfPeople, 10);
-    var oAuthorizationConfig = {
-        format: "inline", /* inline | file */
-        credentials: oEnv.GOOGLE_SHEETS_CREDENTIALS_JSON,
-        accessToken: oEnv.GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON
-    };
+    var oAuthorizationConfig = createAuthorizationConfig(oEnv);
     var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
     if (iAvailablePlaces < 0) {
         return "Registration error. Please try again later.";
+    }
+    if (iAvailablePlaces === 0) {
+        return "Sorry, there are no more places available.";
     }
     if (iAvailablePlaces < iNumberOfPeople) {
         return "Sorry, only " + iAvailablePlaces + " places are available, so we cannot register " + iNumberOfPeople + " people.";
@@ -59,16 +58,14 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     await updateRemainingSeats(iAvailablePlaces - iNumberOfPeople, oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
 
     return new Promise((fnResolve) => {
-        const oNextSunday = moment().weekday(7);
-
-        var oRegistrationPayload = {
-            value1: sNumberOfPeople,
-            value2: sName,
-            value3: oNextSunday.format("ll")
-        };
+        const oNextSunday = getNextSunday();
 
         Request.post("https://maker.ifttt.com/trigger/registerIcchAttendance/with/key/fiWhzPuGKRLEeVXuLflW9", {
-            json: oRegistrationPayload
+            json: {
+                value1: sNumberOfPeople,
+                value2: sName,
+                value3: oNextSunday.format("ll")
+            }
         }, (error, response, body) => {
             if (error) {
                 console.log("Failed to call API: " + error + " status was " + response.statusCode);
@@ -81,8 +78,35 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     });
 }
 
+function getNextSunday() {
+    let oNextSunday = moment().weekday(7);
+    if (moment().format('dddd') === "Sunday") {
+        oNextSunday = moment();
+    }
+    return oNextSunday;
+}
+
+function createAuthorizationConfig (oEnv) {
+    return {
+        format: "inline", /* inline | file */
+        credentials: oEnv.GOOGLE_SHEETS_CREDENTIALS_JSON,
+        accessToken: oEnv.GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON
+    };
+}
+
+async function checkAvailability (oEnv) {
+    var oNextSunday = getNextSunday();
+    var oAuthorizationConfig = createAuthorizationConfig(oEnv);
+    var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
+
+    return {
+        number: iAvailablePlaces,
+        date: oNextSunday.format("ll")
+    };
+}
+
 module.exports = {
     validateInput,
-    getAvailablePlaces,
-    registerName
+    checkAvailability,
+    registerName,
 };

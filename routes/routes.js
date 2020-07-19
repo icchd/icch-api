@@ -172,6 +172,26 @@ var appRouter = function (app) {
         response.send(oStatus);
     });
 
+    app.get("/mass-registration-check", async (request, response) => {
+        let oAvailability = {
+            number: 0,
+            date: null
+        };
+        try {
+            oAvailability = await oMassRegistration.checkAvailability(getEnv());
+        } catch (e) {
+            response.send({
+                success: false
+            });
+            return;
+        }
+        response.send({
+            success: true,
+            places: oAvailability.number,
+            date: oAvailability.date
+        });
+    });
+
     app.post("/mass-registration", async (request, response) => {
         var oData = request.body;
         var sName = oData.name;
