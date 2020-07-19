@@ -2,7 +2,11 @@ const fnGetGoogleSpreadsheetAsJSON = require("./lib/spreadsheetReader");
 const SpreadsheetWriter = require("./lib/spreadsheetWriter");
 const GoogleAuth = require("./lib/googleAuth");
 const Request = require("request");
-const moment = require("moment");
+const moment = require("moment-timezone");
+
+function m () {
+    return moment().tz("Europe/Berlin");
+}
 
 function validateInput (sName, sNumberOfPeople) {
     if (typeof sName !== "string" || sName.length === 0) {
@@ -85,10 +89,9 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
 }
 
 function getNextSunday() {
-    let oNextSunday = moment().weekday(7);
-    console.log("Hour: " + moment().format("H"));
-    if (moment().format('dddd') === "Sunday" && parseInt(moment().format('H'), 10) <= 10) {
-        oNextSunday = moment();
+    let oNextSunday = m().weekday(7);
+    if (m().format('dddd') === "Sunday" && parseInt(m().format('H'), 10) <= 10) {
+        oNextSunday = m();
     }
     return oNextSunday;
 }
