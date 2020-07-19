@@ -8,8 +8,8 @@ function validateInput (sName, sNumberOfPeople) {
     if (typeof sName !== "string" || sName.length === 0) {
         return "Empty name was provided. Please enter a name and try again";
     }
-    if (typeof sNumberOfPeople !== "string" || !(/[1-9]0?/u).test(sNumberOfPeople)) {
-        return "Invalid number was provided. Please enter a valid number and try again";
+    if (typeof sNumberOfPeople !== "string" || !(/^[1-9]0?$/u).test(sNumberOfPeople)) {
+        return "Invalid number was provided. Please enter a valid number and try again.";
     }
     return null;
 }
@@ -69,10 +69,16 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
         }, (error, response, body) => {
             if (error) {
                 console.log("Failed to call API: " + error + " status was " + response.statusCode);
-                fnResolve("An error occurred while registering your name");
+                fnResolve({
+                    success: false,
+                    message: "An error occurred while registering your name"
+                });
             } else {
                 console.log("Got successful response  " + body);
-                fnResolve(null);
+                fnResolve({
+                    success: true,
+                    message: "Thank you. See you on " + oNextSunday.format("ll") + " at mass! Do not forget to mention the name '" + sName + "' to our volunteers when arriving."
+                });
             }
         });
     });

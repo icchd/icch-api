@@ -206,17 +206,10 @@ var appRouter = function (app) {
             return;
         }
 
-        var sRegistrationErrorMessage = await oMassRegistration.registerName(getEnv(), sName, sNumberOfPeople);
-        if (sRegistrationErrorMessage) {
-            response.send({
-                success: false,
-                message: sRegistrationErrorMessage
-            });
-            return;
-        }
-
+        var oRegistrationResponse = await oMassRegistration.registerName(getEnv(), sName, sNumberOfPeople);
         response.send({
-            success: true
+            success: oRegistrationResponse.success,
+            message: oRegistrationResponse.message
         });
     });
 
