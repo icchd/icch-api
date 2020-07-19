@@ -55,13 +55,22 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     var oAuthorizationConfig = createAuthorizationConfig(oEnv);
     var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
     if (iAvailablePlaces < 0) {
-        return "Registration error. Please try again later.";
+        return {
+            success: false,
+            message: "Registration error. Please try again later."
+        };
     }
     if (iAvailablePlaces === 0) {
-        return "Sorry, there are no more places available.";
+        return {
+            success: false,
+            message: "Sorry, there are no more places available."
+        };
     }
     if (iAvailablePlaces < iNumberOfPeople) {
-        return "Sorry, only " + iAvailablePlaces + " places are available, so we cannot register " + iNumberOfPeople + " people.";
+        return {
+            success: false,
+            message: "Sorry, only " + iAvailablePlaces + " places are available, so we cannot register " + iNumberOfPeople + " people."
+        };
     }
 
     await updateRemainingSeats(iAvailablePlaces - iNumberOfPeople, oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
