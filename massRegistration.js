@@ -29,14 +29,14 @@ async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
     return Reflect.apply(Math.min, null, aSpreadsheetValues.map((o) => o.maxnumber));
 }
 
-async function updateRemainingSeats (iNumber, oAuthorizationConfig) {
+async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConfig) {
     const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
     await SpreadsheetWriter.update(
         oAuthorizationToken,
         sSpreadsheetId,
         `covid!A2`,
         {
-            value: "" + iNumber
+            value: String(iNumber)
         }
     );
 }
@@ -56,7 +56,7 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
         return "Sorry, only " + iAvailablePlaces + " places are available, so we cannot register " + iNumberOfPeople + " people.";
     }
 
-    await updateRemainingSeats(iAvailablePlaces - iNumberOfPeople, oAuthorizationConfig);
+    await updateRemainingSeats(iAvailablePlaces - iNumberOfPeople, oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
 
     return new Promise((fnResolve) => {
         const oNextSunday = moment().weekday(7);
