@@ -19,7 +19,7 @@
     "express": "^4.14.0",
     "fb": "^2.0.0",
     "get-json": "^1.0.1",
-    "googleapis": "^55.0.0",
+    "googleapis": "^37.0.0",
     "moment": "^2.24.0",
     "puppeteer": "^1.17.0",
     "request": "^2.88.0",
