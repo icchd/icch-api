@@ -13,7 +13,7 @@ function validateInput (sName, sNumberOfPeople) {
         return "Empty name was provided. Please enter a name and try again";
     }
 
-    if (!(/[\w -]+/u).test(sName)) {
+    if (!(/^[\w \u00F0-\u02AF-]+$/u).test(sName)) {
         return "You have provided an invalid name. You can use only letters and space or dash (\"-\") Characters.";
     }
 
