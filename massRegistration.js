@@ -18,7 +18,7 @@ function validateInput (sName, sNumberOfPeople) {
     }
 
     if (typeof sNumberOfPeople !== "string" || !(/^[1-9]0?$/u).test(sNumberOfPeople)) {
-        return "Invalid number was provided. Please enter a valid number and try again.";
+        return "Invalid number was provided. Please enter a valid number between 1 and 10, and try again.";
     }
     return null;
 }
