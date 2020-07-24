@@ -123,7 +123,7 @@ function createAuthorizationConfig (oEnv) {
 async function checkAvailability (oEnv) {
     var oNextSunday = getNextSunday();
     var oAuthorizationConfig = createAuthorizationConfig(oEnv);
-    var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
+    var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
 
     return {
         number: iAvailablePlaces,
