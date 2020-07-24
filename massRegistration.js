@@ -53,7 +53,7 @@ async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConf
 async function registerName (oEnv, sName, sNumberOfPeople) {
     var iNumberOfPeople = parseInt(sNumberOfPeople, 10);
     var oAuthorizationConfig = createAuthorizationConfig(oEnv);
-    var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
+    var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
     if (iAvailablePlaces < 0) {
         return {
             success: false,
@@ -73,7 +73,7 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
         };
     }
 
-    await updateRemainingSeats(iAvailablePlaces - iNumberOfPeople, oEnv.GOOGLE_SHEETS_SPREADSHEET_ID, oAuthorizationConfig);
+    await updateRemainingSeats(iAvailablePlaces - iNumberOfPeople, oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
 
     return new Promise((fnResolve) => {
         const oNextSunday = getNextSunday();
