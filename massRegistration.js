@@ -26,6 +26,7 @@ function validateInput (sName, sNumberOfPeople) {
 async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
     const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
 
+    console.log("Getting spreadsheets", arguments);
     const aSpreadsheetValues = await fnGetGoogleSpreadsheetAsJSON(
         oAuthorizationToken,
         sSpreadsheetId,
@@ -39,6 +40,7 @@ async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
 }
 
 async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConfig) {
+    console.log("Updating remainign seats", arguments);
     const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
     await SpreadsheetWriter.update(
         oAuthorizationToken,
