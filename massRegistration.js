@@ -26,7 +26,6 @@ function validateInput (sName, sNumberOfPeople) {
 async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
     const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
 
-    console.log("Getting spreadsheets", arguments);
     const aSpreadsheetValues = await fnGetGoogleSpreadsheetAsJSON(
         oAuthorizationToken,
         sSpreadsheetId,
@@ -38,6 +37,22 @@ async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
 
     return Reflect.apply(Math.min, null, aSpreadsheetValues.map((o) => o.maxnumber));
 }
+
+async function getRegistrationStatus (sSpreadsheetId, oAuthorizationConfig) {
+    const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
+
+    const aSpreadsheetValues = await fnGetGoogleSpreadsheetAsJSON(
+        oAuthorizationToken,
+        sSpreadsheetId,
+        `covid!B1:B2`,
+        {
+            headerRow: 1
+        }
+    );
+
+    return aSpreadsheetValues.map((o) => o.status)[0];
+}
+
 
 async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConfig) {
     console.log("Updating remainign seats", arguments);
@@ -124,10 +139,12 @@ async function checkAvailability (oEnv) {
     var oNextSunday = getNextSunday();
     var oAuthorizationConfig = createAuthorizationConfig(oEnv);
     var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
+    var sStatus = await getRegistrationStatus(oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
 
     return {
         number: iAvailablePlaces,
-        date: oNextSunday.format("ll")
+        date: oNextSunday.format("ll"),
+        status: sStatus
     };
 }
 

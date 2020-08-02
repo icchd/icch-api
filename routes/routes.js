@@ -182,6 +182,7 @@ var appRouter = function (app) {
         try {
             oAvailability = await oMassRegistration.checkAvailability(getEnv());
         } catch (e) {
+            console.log(e);
             response.send({
                 success: false
             });
@@ -190,7 +191,8 @@ var appRouter = function (app) {
         response.send({
             success: true,
             places: oAvailability.number,
-            date: oAvailability.date
+            date: oAvailability.date,
+            status: oAvailability.status === "open" ? "open" : "closed"
         });
     });
 
