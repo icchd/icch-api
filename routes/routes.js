@@ -217,6 +217,23 @@ var appRouter = function (app) {
         });
     });
 
+    app.post("/mass-registration-open", async (request, response) => {
+        var oData = request.body;
+        if (oData.password !== oEnv.PASSWORD_AUTOMATIC_EMAILS) {
+            response.send({
+                success: false,
+                message: "Invalid password"
+            });
+            return;
+        }
+        var oRegistrationResponse = await oMassRegistration.openMassRegistration(getEnv());
+        console.log("res", oRegistrationResponse);
+        response.send({
+            success: oRegistrationResponse.success,
+            message: oRegistrationResponse.message
+        });
+    });
+
     app.post("/icch-schedule-check", (request, response) => {
         var oData = request.body;
         if (oData.password !== oEnv.PASSWORD_AUTOMATIC_EMAILS) {

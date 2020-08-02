@@ -38,6 +38,21 @@ async function getAvailablePlaces (sSpreadsheetId, oAuthorizationConfig) {
     return Reflect.apply(Math.min, null, aSpreadsheetValues.map((o) => o.maxnumber));
 }
 
+async function getRegistrationStatusWish (sSpreadsheetId, oAuthorizationConfig) {
+    const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
+
+    const aSpreadsheetValues = await fnGetGoogleSpreadsheetAsJSON(
+        oAuthorizationToken,
+        sSpreadsheetId,
+        `covid!C1:C2`,
+        {
+            headerRow: 1
+        }
+    );
+
+    return aSpreadsheetValues.map((o) => o.statuswish)[0];
+}
+
 async function getRegistrationStatus (sSpreadsheetId, oAuthorizationConfig) {
     const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
 
@@ -53,18 +68,20 @@ async function getRegistrationStatus (sSpreadsheetId, oAuthorizationConfig) {
     return aSpreadsheetValues.map((o) => o.status)[0];
 }
 
-
-async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConfig) {
-    console.log("Updating remainign seats", arguments);
+async function updateSheetCell (sCellId, sValue, sSheetName, sWorksheetName, oAuthorizationConfig) {
     const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
     await SpreadsheetWriter.update(
         oAuthorizationToken,
-        sSpreadsheetId,
-        "covid!A2",
+        sSheetName,
+        `${sWorksheetName}!${sCellId}`,
         {
-            value: String(iNumber)
+            value: String(sValue)
         }
     );
+}
+
+async function updateRemainingSeats (iNumber, sSpreadsheetId, oAuthorizationConfig) {
+    await updateSheetCell("A2", String(iNumber), sSpreadsheetId, "covid", oAuthorizationConfig);
 }
 
 async function registerName (oEnv, sName, sNumberOfPeople) {
@@ -148,8 +165,36 @@ async function checkAvailability (oEnv) {
     };
 }
 
+async function openMassRegistration (oEnv) {
+    var oAuthorizationConfig = createAuthorizationConfig(oEnv);
+    var sWish = await getRegistrationStatusWish(oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
+
+    var sResult = null;
+
+    try {
+        var sSpreadsheetId = oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID;
+        if (sWish === "open") {
+            // update status
+            sResult = await updateSheetCell("B2", "open", sSpreadsheetId, "covid", oAuthorizationConfig);
+        } else {
+            sResult = await updateSheetCell("C2", "open", sSpreadsheetId, "covid", oAuthorizationConfig);
+        }
+    } catch (e) {
+        return {
+            success: false,
+            message: "Error while opening the registration sheet"
+        };
+    }
+
+    return {
+        success: true,
+        message: sResult
+    };
+}
+
 module.exports = {
     validateInput,
     checkAvailability,
     registerName,
+    openMassRegistration
 };
