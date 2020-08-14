@@ -252,17 +252,7 @@ var appRouter = function (app) {
                 format: "inline", /* inline | file */
                 credentials: oEnv.GOOGLE_SHEETS_CREDENTIALS_JSON,
                 accessToken: oEnv.GOOGLE_SHEETS_OFFLINE_ACCESS_TOKEN_JSON
-            },
-            ranges: {
-                quartersInSpreadsheet: [
-                    "1st quarter",
-                    "2nd quarter",
-                    "3rd quarter",
-                    "4th quarter"
-                ],
-                wholeDataRange: "A1:H50"
-            },
-            fieldNames: (oEnv.SUNDAY_SCHEDULE_MOMENTS || "set-up,pick-up,priest,lector,em").split(",")
+            }
         }).then((/* oStatus */) => {
             response.send({
                 success: true

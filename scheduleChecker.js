@@ -11,14 +11,24 @@ async function triggerWebhook (oConfig) {
         dryRun: bDryRun,
         sundayScheduleCompletedWebhookURL: sSundayScheduleCompletedWebhookURL,
         spreadsheetId: sSpreadsheetId,
-        authorization: sAuthorizationJSON,
-        ranges: sRangesJSON,
-        fieldNames: aFieldNames
+        authorization: sAuthorizationJSON
     } = oConfig;
+
+    var oSpreadsheetConfig = await getSpreadsheetConfig(oConfig.authorization, sSpreadsheetId);
+    var aFieldNames = oSpreadsheetConfig.fieldNames.split(",");
+    var oRangesConfig = {
+        quartersInSpreadsheet: [
+            "1st quarter",
+            "2nd quarter",
+            "3rd quarter",
+            "4th quarter"
+        ],
+        wholeDataRange: oSpreadsheetConfig.dataRange
+    };
 
     var aSpreadsheetJSON = await readSpreadsheetAsJson(sSpreadsheetId, {
         authorization: sAuthorizationJSON,
-        ranges: sRangesJSON
+        ranges: oRangesConfig
     });
 
     const aRows = parseRows(aSpreadsheetJSON, "date");
@@ -27,7 +37,12 @@ async function triggerWebhook (oConfig) {
 
     validateSundayRecordFields(oClosestRecord, aFieldNames);
 
-    const sEmailBody = prepareEmailBodyHTML(oClosestRecord);
+    const oTemplateConfig = {
+        emailTemplateHTML: oSpreadsheetConfig.emailTemplateHTML,
+        templates: parseTemplates(oSpreadsheetConfig.templates)
+    };
+
+    const sEmailBody = prepareEmailBodyHTML(oClosestRecord, oTemplateConfig);
     const sEmailSubjectDate = oClosestRecord.date.format("ll");
     const bIsSocialGathering = oClosestRecord.activities.join(" ").toLowerCase().indexOf("social") >= 0;
     const sDayName = oClosestRecord.date.format('dddd');
@@ -61,10 +76,55 @@ async function triggerWebhook (oConfig) {
     return bSuccess;
 }
 
+function parseTemplates(sMultilineAssignments) {
+    //
+    // returns an object
+    // <templateId> : {
+    //    subject: "variable",
+    //    cases: [<no value template>,<one value template>,<two values template>]
+    // }
+    //
+    return sMultilineAssignments.split("\n").reduce((o, sAssignment) => {
+        const [sName, sTemplate] = sAssignment.split("=");
+        const [sSubject, sCases] = sTemplate.split(/[?]/u);
+        o[sName] = {
+            subject: sSubject.replace(/[}{]/gu, ""),
+            cases: sCases.split("__")
+        };
+        return o;
+    }, {});
+}
+
+async function getSpreadsheetConfig (oAuthorizationConfig, sSpreadsheetId) {
+    const oAuthorizationToken = await GoogleAuth.getGoogleAuthorization(oAuthorizationConfig);
+
+    const aaRows = await fnGetGoogleSpreadsheetAsJSON(
+        oAuthorizationToken,
+        sSpreadsheetId,
+        `config!A1:B100`,
+        {
+            fixedHeaderField: false
+        }
+    );
+
+    return buildConfig(aaRows);
+}
+
+function buildConfig (aaRows) {
+    return aaRows.reduce((o, aRow) => {
+        var [sKey, sValue] = aRow;
+        o[sKey] = sValue;
+
+        return o;
+    }, {});
+
+}
+
 function validateSundayRecordFields (oNextSundayRecord, aExpectedFilledFields) {
     const aMissingFields = getFieldsWithoutValue(oNextSundayRecord, aExpectedFilledFields);
     const bAllFieldsHaveValue = aMissingFields.length === 0;
     if (!bAllFieldsHaveValue) {
+        console.log("Found missing fields: " + aMissingFields.join(", "));
         throw new Errors.MissingRowsError({
             missingFields: aMissingFields.join(", ")
         });
@@ -257,48 +317,64 @@ function getDateQuarter (oDate, aPossibleQuarters) {
     return aPossibleQuarters[iQuarterIdx];
 }
 
-function prepareEmailBodyHTML (oNextSundayRecord) {
+function prepareEmailBodyHTML (oNextSundayRecord, oTemplateConfig) {
+    var aNeededVariableNames = extractTemplateVariableNames(oTemplateConfig);
+    var oNeededVariableValues = extractTemplateVariableValues(aNeededVariableNames, oTemplateConfig, oNextSundayRecord);
 
-    function formatPickup (aPickupRecord) {
-        switch (aPickupRecord.length) {
-            case 0:
-                return "N/D";
-            case 1:
-                return aPickupRecord[0];
-            default:
-                return `${aPickupRecord[0]} (main), ${aPickupRecord[1]} (backup)`;
+    var sEmailBody = oTemplateConfig.emailTemplateHTML;
+    aNeededVariableNames.forEach((sVar) => {
+        sEmailBody = sEmailBody.split(`{{${sVar}}}`).join(oNeededVariableValues[sVar]);
+    });
+
+    return sEmailBody;
+}
+
+function extractTemplateVariableValues (aNeededVariableNames, oTemplateConfig, oNextSundayRecord) {
+    var oVarValues = aNeededVariableNames.reduce((o, sVarName) => {
+        var vValue = oNextSundayRecord[sVarName];
+        if (vValue) {
+            o[sVarName] = typeof vValue === "string" ? vValue : vValue.join(", ");
         }
+        return o;
+    }, {});
+
+    // instantiate single templates
+    var oTemplates = oTemplateConfig.templates;
+    Object.keys(oTemplates).forEach((sKey) => {
+        var oTemplate = oTemplates[sKey];
+        var aValues = oNextSundayRecord[oTemplate.subject];
+        if (aValues) {
+            var iNumEntries = aValues.length;
+            if (iNumEntries > oTemplate.cases.length) {
+                throw new Error("The subtemplate for " + sKey + " needs more places. Found " + iNumEntries + " values.");
+            }
+            var sSubTemplate = oTemplate.cases[iNumEntries];
+            sSubTemplate = sSubTemplate.split("{{0}}").join(aValues[0]);
+            sSubTemplate = sSubTemplate.split("{{1}}").join(aValues[1]);
+            oVarValues[sKey] = sSubTemplate;
+        } else {
+            console.log("Cannot find values for " + oTemplate.subject + " perhaps this is an invalid placeholder in the template (typo?)");
+        }
+    });
+
+    return oVarValues;
+}
+
+function extractTemplateVariableNames (oTemplateConfig) {
+    const sTemplate = oTemplateConfig.emailTemplateHTML;
+    const regexp = /\{\{(.+?)\}\}/gu;
+    const matches = sTemplate.matchAll(regexp);
+
+    var oVariables = {};
+    for (const match of matches) {
+      oVariables[match[1]] = true;
     }
 
-    function formatLectors (aLectorsRecord) {
-        switch (aLectorsRecord.length) {
-            case 0:
-                return "No lector";
-            case 1:
-                return `<b>1st and 2nd Reading</b> &rarr; ${aLectorsRecord[0]}<br />`;
-            case 2:
-                return `<b>1st Reading</b> &rarr; ${aLectorsRecord[0]}<br />` +
-                    `<b>2nd Reading</b> &rarr; ${aLectorsRecord[1]}<br />`;
-            default:
-                return aLectorsRecord.map((sName, iIdx) => `<b>Reading ${iIdx + 1}</b> &rarr; ${sName}<br />`).join("");
-        }
-    }
+    Object.keys(oTemplateConfig.templates).forEach((sKey) => {
+        oVariables[sKey] = true;
+    });
 
-    return `<br />
-<b>Priest</b> &rarr; ${oNextSundayRecord.priest.join(", ")}<br />
-<br />`
-+ (oNextSundayRecord["pick-up"]
-        ? `<b>Priest pick-up</b> &rarr; ${formatPickup(oNextSundayRecord["pick-up"])}<br /><br />`
-        : "")
-+ `
-<b>Mass Set-up</b> &rarr; ${oNextSundayRecord["set-up"].join(", ")}<br />
-<br />
-<b>Lectors:</b><br />
-${formatLectors(oNextSundayRecord.lector)}
-<br />
-<b>Eucharistic Minister</b> &rarr; ${oNextSundayRecord.em.join(", ")}<br />
-`;
-
+    return Object.keys(oVariables);
 }
 
 function getFunctionForTest (sFunctionName) {
