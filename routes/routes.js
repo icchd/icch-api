@@ -382,6 +382,7 @@ var appRouter = function (app) {
             message: "Invalid request type"
         });
     });
+
     app.post("/bulletin", (request, response) => {
         var oData = validatePassword(oEnv.PASSWORD_BULLETIN_PUBLISH, request, response);
 
