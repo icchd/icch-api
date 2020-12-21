@@ -139,7 +139,10 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
 function getNextMassDay(oEnv) {
     const sMassDay = oEnv.COVID_REGISTRATION_MASS_DAY_DDMMYYYY;
     if (sMassDay) {
-        return m(sMassDay, "DDMMYYYY");
+        console.log(`Found mass day from env '${sMassDay}'`);
+        const oMassDay = m(sMassDay, "DDMMYYYY");
+        console.log(`Returning ${oMassDay.toString()}`);
+        return oMassDay;
     }
 
     let oNextSunday = m().weekday(7);
