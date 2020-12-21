@@ -110,7 +110,7 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     await updateRemainingSeats(iAvailablePlaces - iNumberOfPeople, oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
 
     return new Promise((fnResolve) => {
-        const oNextSunday = getNextSunday();
+        const oNextSunday = getNextMassDay(oEnv);
 
         Request.post(oEnv.IFTTT_COVID_SEAT_WEBHOOK_URL, {
             json: {
@@ -136,7 +136,12 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
     });
 }
 
-function getNextSunday() {
+function getNextMassDay(oEnv) {
+    const sMassDay = oEnv.COVID_REGISTRATION_MASS_DAY_DDMMYYYY;
+    if (sMassDay) {
+        return m(sMassDay, "DDMMYYYY");
+    }
+
     let oNextSunday = m().weekday(7);
     if (m().format('dddd') === "Sunday" && parseInt(m().format('H'), 10) <= 10) {
         oNextSunday = m();
@@ -153,7 +158,7 @@ function createAuthorizationConfig (oEnv) {
 }
 
 async function checkAvailability (oEnv) {
-    var oNextSunday = getNextSunday();
+    var oNextSunday = getNextMassDay(oEnv);
     var oAuthorizationConfig = createAuthorizationConfig(oEnv);
     var iAvailablePlaces = await getAvailablePlaces(oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);
     var sStatus = await getRegistrationStatus(oEnv.GOOGLE_SHEETS_COVID_SEATCOUNT_SPREADSHEET_ID, oAuthorizationConfig);

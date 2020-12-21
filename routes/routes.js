@@ -17,6 +17,7 @@ var lastFacebookPublishDate = 0;
 function getEnv() {
     var oEnv = { };
     [
+        "COVID_REGISTRATION_MASS_DAY_DDMMYYYY",
         "FACEBOOK_PERMANENT_ACCESS_TOKEN",
         "SUNDAY_SCHEDULE_COMPLETED_WEBHOOK_URL",
         "SUNDAY_SCHEDULE_ERROR_WEBHOOK_URL",
