@@ -39,7 +39,8 @@ function getEnv() {
         "BULLETIN_FORK_FACEBOOK_PUBLISH",
         "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD",
         "PUPPETEER_EXECUTABLE_PATH",
-        "IFTTT_COVID_SEAT_WEBHOOK_URL"
+        "IFTTT_COVID_SEAT_WEBHOOK_URL",
+        "LOG_ENABLE"
     ].forEach((sVar) => {
         if (process.env[sVar]) {
             oEnv[sVar] = process.env[sVar];

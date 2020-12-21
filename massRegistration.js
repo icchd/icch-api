@@ -1,6 +1,7 @@
 const fnGetGoogleSpreadsheetAsJSON = require("./lib/spreadsheetReader");
 const SpreadsheetWriter = require("./lib/spreadsheetWriter");
 const GoogleAuth = require("./lib/googleAuth");
+const logger = require("./lib/logger");
 const Request = require("request");
 const moment = require("moment-timezone");
 
@@ -120,13 +121,13 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
             }
         }, (error, response, body) => {
             if (error) {
-                console.log("Failed to call API: " + error + " status was " + response.statusCode);
+                logger.error("Failed to call API: " + error + " status was " + response.statusCode);
                 fnResolve({
                     success: false,
                     message: "An error occurred while registering your name"
                 });
             } else {
-                console.log("Got successful response  " + body);
+                logger.log("Got successful response  " + body);
                 fnResolve({
                     success: true,
                     message: "Thank you. See you at mass on " + oNextSunday.format("ll") + "! Do not forget to mention the name '" + sName + "' to our volunteers when arriving."
@@ -139,9 +140,9 @@ async function registerName (oEnv, sName, sNumberOfPeople) {
 function getNextMassDay(oEnv) {
     const sMassDay = oEnv.COVID_REGISTRATION_MASS_DAY_DDMMYYYY;
     if (sMassDay) {
-        console.log(`Found mass day from env '${sMassDay}'`);
+        logger.log(`Found mass day from env '${sMassDay}'`);
         const oMassDay = moment(sMassDay, "DDMMYYYY");
-        console.log(`Returning ${oMassDay.toString()}`);
+        logger.log(`Returning ${oMassDay.toString()}`);
         return oMassDay;
     }
 
