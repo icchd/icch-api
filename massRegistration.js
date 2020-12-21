@@ -140,7 +140,7 @@ function getNextMassDay(oEnv) {
     const sMassDay = oEnv.COVID_REGISTRATION_MASS_DAY_DDMMYYYY;
     if (sMassDay) {
         console.log(`Found mass day from env '${sMassDay}'`);
-        const oMassDay = m(sMassDay, "DDMMYYYY");
+        const oMassDay = moment(sMassDay, "DDMMYYYY");
         console.log(`Returning ${oMassDay.toString()}`);
         return oMassDay;
     }
