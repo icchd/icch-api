@@ -14,7 +14,7 @@ const DEFAULT_MIN_FACEBOOK_REPUBLISH_SECS = 900000;
 
 var lastFacebookPublishDate = 0;
 
-function getEnv(oOverride) {
+function getEnv() {
     var oEnv = { };
     [
         "COVID_REGISTRATION_MASS_DAY_DDMMYYYY",
@@ -45,10 +45,6 @@ function getEnv(oOverride) {
         if (process.env[sVar]) {
             oEnv[sVar] = process.env[sVar];
         }
-    });
-
-    Object.keys(oOverride).forEach(k => {
-        oEnv[k] = oOverride[k];
     });
 
     if (Object.keys(oEnv).length === 0) {
@@ -181,19 +177,12 @@ var appRouter = function (app) {
     });
 
     app.get("/mass-registration-check", async (request, response) => {
-        const sDate = request.query.date;
         let oAvailability = {
             number: 0,
             date: null
         };
-        let oEnv = getEnv();
-        if (sDate) {
-            console.log("Using special Date from URL: " + sDate);
-            oEnv = getEnv({COVID_REGISTRATION_MASS_DAY_DDMMYYYY: sDate});
-        }
-
         try {
-            oAvailability = await oMassRegistration.checkAvailability(oEnv);
+            oAvailability = await oMassRegistration.checkAvailability(getEnv());
         } catch (e) {
             console.log(e);
             response.send({
