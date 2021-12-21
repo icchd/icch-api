@@ -181,7 +181,7 @@ var appRouter = function (app) {
     });
 
     app.get("/mass-registration-check", async (request, response) => {
-        const sDate = request.query.date;
+        const sDate = (request.query || {}).date;
         let oAvailability = {
             number: 0,
             date: null
