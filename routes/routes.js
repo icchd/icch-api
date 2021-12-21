@@ -223,13 +223,7 @@ var appRouter = function (app) {
             return;
         }
 
-        var sDate = oData.name;
-        var oEnv = getEnv();
-        if (sDate) {
-            oEnv = getEnv({COVID_REGISTRATION_MASS_DAY_DDMMYYYY: sDate});
-        }
-
-        var oRegistrationResponse = await oMassRegistration.registerName(oEnv, sName, sNumberOfPeople);
+        var oRegistrationResponse = await oMassRegistration.registerName(getEnv(), sName, sNumberOfPeople);
         response.send({
             success: oRegistrationResponse.success,
             message: oRegistrationResponse.message
