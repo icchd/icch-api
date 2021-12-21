@@ -47,7 +47,7 @@ function getEnv(oOverride) {
         }
     });
 
-    Object.keys(oOverride).forEach(k => {
+    Object.keys(oOverride || {}).forEach(k => {
         oEnv[k] = oOverride[k];
     });
 
