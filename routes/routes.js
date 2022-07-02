@@ -6,6 +6,8 @@ var oScheduleChecker = require("../scheduleChecker");
 var oMassRegistration = require("../massRegistration");
 var Request = require("request");
 var oPdfCreator = require("../lib/pdfCreator");
+var axios = require('axios');
+var cheerio = require('cheerio');
 
 // -- github operations
 const oGithubApi = require("../lib/githubApi");
@@ -283,6 +285,57 @@ var appRouter = function (app) {
                 message: oCustomError.message
             });
         });
+    });
+
+    app.get("/readings/:mmddyy", async (request, response) => {
+
+        async function getCatholicReadings (date) {
+            const url = `https://bible.usccb.org/bible/readings/${date}.cfm`;
+            console.log(url);
+            const response = await axios.get(url);
+            const $ = cheerio.load(response.data);
+
+            const data = {reading1: "", reading2: "", gospel: "", title: "", color: "", psalm: ""};
+
+            $(".content-header").each((i, el) => {
+                const title = $(el).find("h3").text().toLowerCase().trim();
+                const val = $(el).find("a").text().trim();
+
+                if ((/reading.*1/u).test(title)) {
+                    data.reading1 = val;
+                    return;
+                }
+                if ((/reading.*2/u).test(title)) {
+                    data.reading2 = val;
+                    return;
+                }
+                if ((/psalm/u).test(title)) {
+                    data.psalm = val;
+                    return;
+                }
+                if ((/gospel/u).test(title)) {
+                    data.gospel = val;
+                }
+            });
+
+            data.title = $(".container .innerblock h2").first().text().replace(/\n/gu, "").trim();
+
+            return data;
+        }
+
+        try {
+            const readings = await getCatholicReadings(request.params["mmddyy"]);
+            response.send({
+                success: true,
+                result: readings
+            });
+        } catch (e) {
+            console.log(`Error while getting readings: ${e}`);
+            response.send({
+                success: false,
+                message: "Error while getting readings"
+            });
+        }
     });
 
     app.post("/songs", (request, response) => {
