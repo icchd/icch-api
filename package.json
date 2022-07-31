@@ -28,7 +28,7 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "retry": "^0.10.1",
-    "urijs": "^1.19.1"
+    "urijs": "^1.19.11"
   },
   "engines": {
     "node": ">=10.15.3"
