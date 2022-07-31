@@ -1,6 +1,7 @@
 var express = require("express");
 var bodyParser = require("body-parser");
 var compression = require("compression");
+require('dotenv').config();
 var app = express();
 
 (async () => {
