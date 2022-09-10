@@ -35,7 +35,7 @@ function publishToFacebook(sPermanentAccessToken, sMessage, sLink, isRealPublish
         FB.setAccessToken(sPermanentAccessToken);
 
         FB.api(
-            '/InternationalCatholicCommunityofHeidelberg/feed',
+            '/470231359761256/feed',
             'post', {
                 // API: https://developers.facebook.com/docs/graph-api/reference/v2.10/page/feed
                 // message: 'Our bulletin for ' + app.bulletin.title + ' is available',
