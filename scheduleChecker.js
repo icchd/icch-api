@@ -361,6 +361,7 @@ function extractTemplateVariableValues (aNeededVariableNames, oTemplateConfig, o
 }
 
 function extractTemplateVariableNames (oTemplateConfig) {
+  console.log(oTemplateConfig);
     const sTemplate = oTemplateConfig.emailTemplateHTML;
     const regexp = /\{\{(.+?)\}\}/gu;
     const matches = sTemplate.matchAll(regexp);

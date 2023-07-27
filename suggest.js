@@ -65,7 +65,7 @@ function getSuggestions () {
 
     return request(S_SITE_URL)
         .then(($) => {
-            var menu = $("#inlineFormCustomSelect > option[selected]");
+            var menu = $("select > option[selected]");
             var title = menu.text();
             var link = menu.attr("value");
 
